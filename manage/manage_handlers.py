@@ -1,0 +1,93 @@
+import traceback
+from twitter_api.api import TwitterApi
+
+
+def handle_add_follower(db, manager, chat_id):
+    try:
+        auth_url, owner_token, owner_secret = TwitterApi.get_authorization_url()
+        manager["owner_token"] = owner_token
+        manager["owner_secret"] = owner_secret
+        manager["state"] = 'enter_pin'
+    except Exception as e:
+        print(e, traceback.format_exc())
+        return "error, " + str(e)
+
+    response = db.managers.update_one(
+        {"chat_id": chat_id},
+        {"$set": manager},
+        upsert=False,
+    )
+    print(response)
+
+    return (
+        "Follow the link, authorize your Twitter account and send me a PIN:\n"
+        + auth_url
+    )
+
+
+def handle_enter_pin(db, manager, message, chat_id):
+    owner_token = manager["owner_token"]
+    owner_secret = manager["owner_secret"]
+    if not (owner_token and owner_secret):
+        manager["state"] = "main"
+        response = db.managers.update_one(
+            {"chat_id": chat_id},
+            {"$set": manager},
+            upsert=False,
+        )
+        return "error, cant find your auth session data, try again"
+    try:
+        access_token, access_token_secret = TwitterApi.verify_pin(
+            message, owner_token, owner_secret
+        )
+    except Exception as e:
+        try:
+            manager["state"] = "main"
+            response = db.managers.update_one(
+                {"chat_id": chat_id},
+                {"$set": manager},
+                upsert=False,
+            )
+        except:
+            pass
+        print(e, traceback.format_exc())
+        return "error, " + str(e)
+    manager["state"] = "main"
+    # del session["owner_token"]
+    # del session["owner_secret"]
+    response = db.managers.update_one(
+        {"chat_id": chat_id},
+        {"$set": manager},
+        upsert=False,
+    )
+
+    try:
+        # check authorization:
+        user_data = TwitterApi.get_user_data_me(access_token, access_token_secret)
+    except Exception as e:
+        print(e, traceback.format_exc())
+        return "Error, " + str(e)
+
+    user = db.users.find_one(dict(id=user_data["id"]))
+    if not user:
+        user = db.users.insert_one({"id": user_data["id"]})
+
+    user_data["access_token"] = access_token
+    user_data["access_token_secret"] = access_token_secret
+    # print(user_data['data'])
+    user = db.users.update_one(
+        {"id": user_data["id"]},
+        {"$set": user_data},
+        upsert=False,
+    )
+    # print('user saved')
+
+    return 'New follower "{}" authorized 👌'.format(user_data["username"])
+
+
+def handle_add_source(db, username):
+    user_data = TwitterApi.get_user_data_by_username(username)
+    if db.sources.find_one({"id": user_data["id"]}):
+        return "@{} is already in source list".format(username)
+    db.sources.insert_one(user_data)
+    return "@{} added in source list ✅".format(username)
