@@ -95,7 +95,8 @@ class TwitterApi:
         # print("Please go here and authorize: %s" % authorization_url)
         return authorization_url, resource_owner_key, resource_owner_secret
 
-    def set_like(user, post_id):
+    @classmethod
+    def set_like(cls, user, post_id):
         payload = {"tweet_id": post_id}
         oauth = OAuth1Session(
             consumer_key,
@@ -106,7 +107,7 @@ class TwitterApi:
         # print("https://api.twitter.com/2/users/{}/likes".format(post_id), payload)
         # Making the request
         response = oauth.post(
-            "https://api.twitter.com/2/users/{}/likes".format(user['id']), json=payload
+            "https://api.twitter.com/2/users/{}/likes".format(user["id"]), json=payload
         )
 
         if response.status_code != 200:
@@ -120,11 +121,11 @@ class TwitterApi:
 
         # Saving the response as JSON
         json_response = response.json()
-        # print(json.dumps(json_response, indent=4, sort_keys=True))
+        print(json.dumps(json_response, indent=4, sort_keys=True))
         return json_response
 
     @classmethod
-    def get_tweets_by_id(cls, user_id):
+    def get_tweets_by_id(cls, user_id, last_id=None):
         url = "https://api.twitter.com/2/users/{}/tweets".format(user_id)
         # Tweet fields are adjustable.
         # Options include:
@@ -133,7 +134,12 @@ class TwitterApi:
         # in_reply_to_user_id, lang, non_public_metrics, organic_metrics,
         # possibly_sensitive, promoted_metrics, public_metrics, referenced_tweets,
         # source, text, and withheld
-        params = {"tweet.fields": "id"}
+        params = {
+            "tweet.fields": "id,author_id",
+            "exclude": "retweets,replies",
+        }
+        if last_id:
+            params["since_id"] = last_id
 
         oauth = cls.create_oauth_session()
         response = oauth.get(url, params=params)
@@ -145,6 +151,8 @@ class TwitterApi:
                 )
             )
         # print(json.dumps(response.json(), indent=2, ensure_ascii=False))
+        if response.json().get("meta", {}).get("result_count") == 0:
+            return []
         return response.json()["data"]
 
 

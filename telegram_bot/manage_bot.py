@@ -1,5 +1,6 @@
 from manage.handler import handle_message
 from telegram_bot.bot_base import BaseHandler
+from settings import debug_chat
 
 # from sheets_api import append_transaction, get_data_from_current_list
 import datetime
@@ -58,21 +59,26 @@ class ManageHandler(BaseHandler, ContainTestDataSource):
     @property
     def comands(self):
         # TODO states
-        comands = ['add_follower', 'add_source', 'list_followers', 'list_sources', 'report']
+        comands = [
+            "add_follower",
+            "add_source",
+            "list_followers",
+            "list_sources",
+            "report",
+        ]
         return [dict(text=k, data=k) for k in comands]
 
-    debug_chat = '258610595'
     def handle_key(self, text):
         answer = handle_message(self.chat_id, text)
-        
+
         try:
-            if self.chat_id != self.debug_chat:
-                debug_text = 'req:\n{}\nresp:\n{}'.format(text, answer)
-                self.bot.sendMessage(self.debug_chat, debug_text)
+            if self.chat_id != debug_chat:
+                debug_text = "req:\n{}\nresp:\n{}".format(text, answer)
+                self.bot.sendMessage(debug_chat, debug_text)
         except Exception as e:
-            print('debug')
+            print("debug")
             print(e)
-        
+
         if answer:
             self.send(answer)
         # if not text.startswith("/"):

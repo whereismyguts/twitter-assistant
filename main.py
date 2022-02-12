@@ -1,7 +1,7 @@
 # from flask import Flask, request as fl_request
 # import telepot
 from telegram_bot.manage_bot import ManageHandler
-import telepot
+
 import urllib3
 import traceback
 
@@ -11,7 +11,9 @@ import json
 import time
 import pickle
 import os
-from telegram_bot.settings import BOT_KEY
+
+from telegram_bot.services import get_bot
+
 
 # proxy_url = "http://proxy.server:{}".format(PORT)
 # telepot.api._pools = {
@@ -20,7 +22,7 @@ from telegram_bot.settings import BOT_KEY
 # telepot.api._onetime_pool_spec = (urllib3.ProxyManager, dict(proxy_url=proxy_url, num_pools=1, maxsize=1, retries=False, timeout=30))
 
 
-bot = telepot.Bot(BOT_KEY)
+bot = get_bot()
 
 
 def handle(msg):
@@ -36,7 +38,7 @@ def run():
             print("load:", state)
     else:
         state = dict(last_id=0)
-    print('serving...')
+    print("serving...")
     while 1:
 
         try:
