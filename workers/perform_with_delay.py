@@ -1,3 +1,7 @@
+import sys,os
+sys.path
+sys.path.append(os.getcwd())
+
 from custom_settings import get_custom_settings
 from twitter_api.api import TwitterApi
 from database.mongo import db, get_random

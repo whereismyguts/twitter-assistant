@@ -1,3 +1,7 @@
+import sys,os
+sys.path
+sys.path.append(os.getcwd())
+
 import random
 
 from database.mongo import db
