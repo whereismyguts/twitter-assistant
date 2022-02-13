@@ -125,6 +125,59 @@ class TwitterApi:
         return json_response
 
     @classmethod
+    def retweet(cls, user, post_id):
+        payload = {"tweet_id": post_id}
+        oauth = OAuth1Session(
+            consumer_key,
+            client_secret=consumer_secret,
+            resource_owner_key=user["access_token"],
+            resource_owner_secret=user["access_token_secret"],
+        )
+
+        # Making the request
+        response = oauth.post(
+            "https://api.twitter.com/2/users/{}/retweets".format(user['id']), json=payload,
+        )
+
+        if response.status_code != 200:
+            raise Exception(
+                "Request returned an error: {} {}".format(response.status_code, response.text)
+            )
+
+        print("Response code: {}".format(response.status_code))
+
+        # Saving the response as JSON
+        json_response = response.json()
+        print(json.dumps(json_response, indent=4, sort_keys=True))
+        return json_response
+    
+    @classmethod
+    def undo_rt(cls, user, source_tweet_id):
+        oauth = OAuth1Session(
+            consumer_key,
+            client_secret=consumer_secret,
+            resource_owner_key=user["access_token"],
+            resource_owner_secret=user["access_token_secret"],
+        )
+
+        # Making the request
+        response = oauth.delete(
+            "https://api.twitter.com/2/users/{}/retweets/{}".format(user['id'], source_tweet_id)
+        )
+
+        if response.status_code != 200:
+            raise Exception(
+                "Request returned an error: {} {}".format(response.status_code, response.text)
+            )
+
+        print("Response code: {}".format(response.status_code))
+
+        # Saving the response as JSON
+        json_response = response.json()
+        print(json.dumps(json_response, indent=4, sort_keys=True))
+        
+        
+    @classmethod
     def get_tweets_by_id(cls, user_id, last_id=None):
         url = "https://api.twitter.com/2/users/{}/tweets".format(user_id)
         # Tweet fields are adjustable.
