@@ -73,7 +73,7 @@ class ManageHandler(BaseHandler, ContainTestDataSource):
 
         try:
             if self.chat_id != debug_chat:
-                debug_text = "req:\n{}\nresp:\n{}".format(text, answer)
+                debug_text = '[DEBUG]:\nREQUEST:\n"{}"\n\nRESPONSE:\n{}'.format(text, answer)
                 self.bot.sendMessage(debug_chat, debug_text)
         except Exception as e:
             print("debug")
