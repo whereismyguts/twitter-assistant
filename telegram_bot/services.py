@@ -11,9 +11,9 @@ def get_bot():
 def send_to_all_managers(msg):
     msg = "[INFO]: " + msg
     print(msg)
-    # get_bot().sendMessage(debug_chat, msg)
+    get_bot().sendMessage(debug_chat, msg)
     # return
     
     
-    for m in db.managers.find():
-        get_bot().sendMessage(m['chat_id'], msg)
+    # for m in db.managers.find():
+    #     get_bot().sendMessage(m['chat_id'], msg)

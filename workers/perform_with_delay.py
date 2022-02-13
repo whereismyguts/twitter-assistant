@@ -11,6 +11,7 @@ import argparse
 import time
 import random
 import datetime
+import traceback
 
 def perform_action(order):
     if order['action'] == 'like':
@@ -35,46 +36,64 @@ if __name__ == "__main__":
     if ACTION_TYPE not in ['rt', 'like']:
         raise Exception('bad action!')
     
-    stored_settings = get_custom_settings() 
-    print(stored_settings)
-    
-    orders = get_random(
-        db.orders,
-        filter={
-            "status": "new",
-            "action": ACTION_TYPE,
-        },
-    )
-    
-    print(orders)
-    # NOTE:
-    # Default orders count is 1 (recomended, because this command is executed in crontab once in a minute). 
-    # Random delay before every action:
-    for order in orders:
-        delay = random.randint(
-            stored_settings['DELAY_MINUTES_MIN'],
-            stored_settings['DELAY_MINUTES_MAX'], 
+    if os.isfile(ACTION_TYPE + '.lock'):
+        print(ACTION_TYPE, 'is locked! cant')
+        sys.exit()
+        
+    with open(ACTION_TYPE+'.lock', 'w') as f:
+        
+            f.write(str(datetime.timedelta.utcnow()))
+            print(ACTION_TYPE, 'locked')
+            
+            
+    try:
+        stored_settings = get_custom_settings() 
+        print(stored_settings)
+        
+        orders = get_random(
+            db.orders,
+            filter={
+                "status": "new",
+                "action": ACTION_TYPE,
+            },
         )
-        print(delay, 'minutes sleep...', )
-        time.sleep(delay*60)
-        print(delay, 'sleep is over.')
-
-        if perform_action(order):
-            db.orders.update_one(
-                dict(_id=order["_id"]),
-                {"$set": dict(
-                    status="done",
-                    time=datetime.datetime.utcnow(),
-                )},
+        
+        # NOTE:
+        # Default orders count is 1 (recomended, because this command is executed in crontab once in a minute). 
+        # Random delay before every action:
+        for order in orders:
+            delay = random.randint(
+                stored_settings['DELAY_MINUTES_MIN'],
+                stored_settings['DELAY_MINUTES_MAX'], 
             )
-            msg = "{} is DONE.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
-                order["action"],
-                order["user"]["username"],
-                "https://twitter.com/{}/status/{}".format(
-                    order["post"].get("author_id", 'none'),
-                    order["post"]["id"],
-                ),
-                order["post"]["text"],
-            )
-            send_to_all_managers(msg)
+            print(delay, 'minutes sleep...')
+            time.sleep(delay*60)
+            print(delay, 'sleep is over.')
+            
+            if perform_action(order):
+                db.orders.update_one(
+                    dict(_id=order["_id"]),
+                    {"$set": dict(
+                        status="done",
+                        time=datetime.datetime.utcnow(),
+                    )},
+                )
+                msg = "{} is DONE.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+                    order["action"],
+                    order["user"]["username"],
+                    "https://twitter.com/{}/status/{}".format(
+                        order["post"].get("author_id", 'none'),
+                        order["post"]["id"],
+                    ),
+                    order["post"]["text"],
+                )
+                send_to_all_managers(msg)
+                
+        
+    except Exception as e:
+        print(e, traceback.format_exc())
+    
+    
+    os.remove(ACTION_TYPE+'.lock')
+    print(ACTION_TYPE, 'unlocked')
             
