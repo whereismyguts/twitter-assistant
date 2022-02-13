@@ -8,17 +8,17 @@ from manage.manage_handlers import (
 )
 
 COMMANDS_HELP = """
-__add_follower__: Authorize your Twitter account by link and PIN, to use them for interact with sources
+add_follower: Authorize your Twitter account by link and PIN, to use them for interact with sources
 
-__add_source *username*__: Add Twitter account and periodically scan it for new tweets to like/rt them. Example "add_source jack" - search and retweet/like 10 last and every new original tweets of @jack twitter account.
+add_source USERNAME: Add Twitter account and periodically scan it for new tweets to like/rt them. Example "add_source jack" - search and retweet/like 10 last and every new original tweets of @jack twitter account.
 
-__stats__: Show list of all followers and sources
+stats: Show list of all followers and sources
 
-__set_delay A B__(In progress): Set time random limits (in minutes) between background actions (like or rt). Example: "set_delay 2 15" will make every type of action executing with delay from 2 to 15 minutes each.
+set_delay A B(*In progress*): Set time random limits (in minutes) between background actions (like or rt). Example: "set_delay 2 15" will make every type of action executing with delay from 2 to 15 minutes each.
 
-__set_percent ACTION PERCENT__(In progress): Set how many percents (1-100) of your authorized users will be engaged in one action (like and rt). Using if there is more than 5 users authorized. Example: "set_precent like 50"
+set_percent ACTION PERCENT(*In progress*): Set how many percents (1-100) of your authorized users will be engaged in one action (like and rt). Using if there is more than 5 users authorized. Example: "set_precent like 50"
 
-__#TAG ACTION COUNT__(In progress): Find and add to queue like (or rt) some amount of posts with hashtag. Example: "#python rt 10", "#news like 5"
+#TAG ACTION COUNT(*In progress*): Find and add to queue like (or rt) some amount of posts with hashtag. Example: "#python rt 10", "#news like 5"
 """
 
 # Logger settings - CloudWatch
