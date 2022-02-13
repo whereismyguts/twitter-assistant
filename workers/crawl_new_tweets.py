@@ -69,7 +69,7 @@ def create_order(post, user, action):
         ),
         post["text"],
     )
-    send_to_all_managers(msg)
+    return msg
 
 
 if __name__ == "__main__":
@@ -77,8 +77,12 @@ if __name__ == "__main__":
     for source in sources:
         posts = get_posts_from_source(source)
         # print(source)
+        text = ''
         for post in posts:
             for user in get_some_users(percent=LIKE_USER_PERCENT):
-                create_order(post, user, "like")
-            # for user in get_some_users(percent=RT_USER_PERCENT):
-            #     create_order(post, user, "rt")
+                text += '\n----------\n' + create_order(post, user, "like")
+            for user in get_some_users(percent=RT_USER_PERCENT):
+                text += '\n----------\n' +create_order(post, user, "rt")
+        if text:
+            # print(text)
+            send_to_all_managers(text)

@@ -19,7 +19,11 @@ def perform_action(order):
     elif order['action'] == 'rt':
         r = TwitterApi.retweet(order["user"], order["post"]["id"])
         return r.get("data", {}).get("retweeted") 
-
+    if 'errors' in r:
+        db.orders.update_one(
+            {'_id': order['_id']},
+            {'$set': {'status': 'error', 'error': r['errors']}}
+        )
 
 # CRON: */1 * * * *
 if __name__ == "__main__":
@@ -42,6 +46,7 @@ if __name__ == "__main__":
         },
     )
     
+    print(orders)
     # NOTE:
     # Default orders count is 1 (recomended, because this command is executed in crontab once in a minute). 
     # Random delay before every action:
@@ -52,7 +57,8 @@ if __name__ == "__main__":
         )
         print(delay, 'minutes sleep...', )
         time.sleep(delay*60)
-        
+        print(delay, 'sleep is over.')
+
         if perform_action(order):
             db.orders.update_one(
                 dict(_id=order["_id"]),
