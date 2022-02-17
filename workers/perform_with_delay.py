@@ -36,13 +36,13 @@ if __name__ == "__main__":
     if ACTION_TYPE not in ['rt', 'like']:
         raise Exception('bad action!')
     
-    if os.isfile(ACTION_TYPE + '.lock'):
-        print(ACTION_TYPE, 'is locked! cant')
+    if os.path.isfile(ACTION_TYPE + '.lock'):
+        # print(ACTION_TYPE, 'is locked! cant')
         sys.exit()
         
     with open(ACTION_TYPE+'.lock', 'w') as f:
         
-            f.write(str(datetime.timedelta.utcnow()))
+            f.write(str(datetime.datetime.utcnow()))
             print(ACTION_TYPE, 'locked')
             
             
@@ -78,8 +78,9 @@ if __name__ == "__main__":
                         time=datetime.datetime.utcnow(),
                     )},
                 )
-                msg = "{} is DONE.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+                msg = "{} is DONE after {}min delay.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
                     order["action"],
+                    delay,
                     order["user"]["username"],
                     "https://twitter.com/{}/status/{}".format(
                         order["post"].get("author_id", 'none'),
