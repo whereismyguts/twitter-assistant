@@ -13,7 +13,7 @@ class TwitterApi:
         if cls._user is None:
             cls._user = db.users.find_one()
         if not cls._user:
-            raise Exception("need at least one user authrized")
+            raise Exception("need at least one user authorized")
         return cls._user
 
     @classmethod

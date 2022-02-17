@@ -68,12 +68,13 @@ def handle_enter_pin(db, manager, message, chat_id):
         print(e, traceback.format_exc())
         return "Error, " + str(e)
 
-    user = db.users.find_one(dict(id=user_data["id"]))
+    user = db.users.find_one(dict(id=user_data["id"])) # ignore deleted
     if not user:
         user = db.users.insert_one({"id": user_data["id"]})
 
     user_data["access_token"] = access_token
     user_data["access_token_secret"] = access_token_secret
+    user_data['deleted'] = False
     # print(user_data['data'])
     user = db.users.update_one(
         {"id": user_data["id"]},
@@ -86,8 +87,18 @@ def handle_enter_pin(db, manager, message, chat_id):
 
 
 def handle_add_source(db, username):
-    user_data = TwitterApi.get_user_data_by_username(username)
-    if db.sources.find_one({"id": user_data["id"]}):
-        return "@{} is already in source list".format(username)
-    db.sources.insert_one(user_data)
-    return "@{} added in source list ✅".format(username)
+    try:
+        user_data = TwitterApi.get_user_data_by_username(username)
+    except Exception as e:
+        print(e)
+        return 'Could not find user with username', username
+    user_data['deleted'] = False
+    source = db.sources.find_one({"id": user_data["id"]})
+    if source:
+        if not source['deleted']:
+            return "@{} is already in source list".format(username)
+        db.source.update_one({"id": user_data["id"]}, {'$set': user_data})
+        return "@{} revoked in source list ✅".format(username)
+    else:    
+        db.sources.insert_one(user_data)
+        return "@{} added to source list ✅".format(username)

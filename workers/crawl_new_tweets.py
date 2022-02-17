@@ -19,12 +19,12 @@ RT_USER_PERCENT = 0.5
 
 
 def get_sources():
-    return [s for s in db.sources.find()]
+    return [s for s in db.sources.find(deleted=False)]
     # return [dict(id=get_id()) for i in range(5)]
 
 
 def get_users():
-    return [u for u in db.users.find()]
+    return [u for u in db.users.find(dict(deleted=False))]
     # return [dict(id=get_id()) for i in range(10)]
 
 

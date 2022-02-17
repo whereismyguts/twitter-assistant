@@ -1,11 +1,11 @@
 import traceback, json
 from bson.json_util import dumps
-from manage.actions import set_like
 from manage.manage_handlers import (
     handle_add_follower,
     handle_add_source,
     handle_enter_pin,
 )
+import re
 
 COMMANDS_HELP = """
 help
@@ -84,11 +84,29 @@ def handle_message(chat_id, message):
 
         if start_with(message, "add_source"):
             message = message.replace("@", "")
-            return handle_add_source(db, message.split(" ")[1])
+            username = message.split(" ")[1]
+            return handle_add_source(db, username)
 
-        if start_with(message, "like"):
-            post_id = message.split(" ")[1]
-            return set_like(db, post_id)
+        # if start_with(message, "like"):
+        #     post_id = message.split(" ")[1]
+        #     return set_like(db, post_id)
+        
+        if start_with(message, "del_follower"):
+            username = message.split(" ")[1].lower()
+            user = db.users.find_one({'username': re.compile(username, re.IGNORECASE)})
+            if not user or user['deleted']:
+                return 'There no source: {}'.format(username)
+            db.users.update_one({'username': username}, {'deleted': True})
+            return 'Source {} now is removed'.format(username)
+        
+        if start_with(message, "del_source"):
+            username = message.split(" ")[1].lower()
+            user = db.sources.find_one({'username': re.compile(username, re.IGNORECASE)})
+            if not user or user['deleted']:
+                return 'There no source: {}'.format(username)
+            db.sources.update_one({'username': username}, {'deleted': True})
+            return 'Source {} now is removed'.format(username)
+        
         if message == 'stats':
             users=[u['username'] for u in db.users.find(dict(deleted=False))]
             sources=[u['username'] for u in db.sources.find(dict(deleted=False))]
