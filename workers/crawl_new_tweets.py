@@ -80,9 +80,12 @@ if __name__ == "__main__":
         text = ''
         for post in posts:
             for user in get_some_users(percent=LIKE_USER_PERCENT):
-                text += '\n----------\n' + create_order(post, user, "like")
+                text = create_order(post, user, "like")
+                if text:
+                    send_to_all_managers(text)
             for user in get_some_users(percent=RT_USER_PERCENT):
-                text += '\n----------\n' +create_order(post, user, "rt")
-        if text:
-            # print(text)
-            send_to_all_managers(text)
+                text = create_order(post, user, "rt")
+                if text:
+                    send_to_all_managers(text)
+
+            

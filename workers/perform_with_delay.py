@@ -25,6 +25,10 @@ def perform_action(order):
             {'_id': order['_id']},
             {'$set': {'status': 'error', 'error': r['errors']}}
         )
+# group enqurue messageses by post
+# add random seconds delay
+# add del commands
+# add order stats
 
 # CRON: */1 * * * *
 if __name__ == "__main__":

@@ -8,19 +8,32 @@ from manage.manage_handlers import (
 )
 
 COMMANDS_HELP = """
-help\n- Show this text.
+help
+This will show the various commands that can be used with this bot. 
 
-add_follower\n- Authorize your Twitter account by link and PIN, to use them for interact with sources.
+add_follower
+This will add a new Twitter account to the “pool” of accounts that will like and retweet tweets from main accounts. 
 
-add_source USERNAME\n- Add Twitter account and periodically scan it for new tweets to like/rt them. Example "add_source jack" - search and retweet/like 10 last and every new original tweets of @jack twitter account.
+add_source HANDLE
+This will add another main Twitter account. The “pool” Twitter accounts will like and retweet tweets from these main accounts. Example: “add_source jack” will like and retweet the 10 last tweets and every new tweet for the @jack Twitter account. 
 
-stats\n- Show list of all followers and sources.
+del_source HANDLE
+This will delete the source and stop listening all new post from it
 
-set_delay A B (*In progress*)\n- Set time random limits (in minutes) between background actions (like or rt). Example: "set_delay 2 15" will make every type of action executing with delay from 2 to 15 minutes each.
+del_follower HANDLE
+This will delete the twitter acount frim the "pool" and account will do not liking and retweeting anymore
 
-set_percent ACTION PERCENT (*In progress*)\n- Set how many percents (1-100) of your authorized users will be engaged in one action (like and rt). Using if there is more than 5 users authorized. Example: "set_precent like 50".
+stats
+This will show the list of Twitter accounts in the “pool” and all the main Twitter accounts connected to the bot. 
 
-#TAG ACTION COUNT (*In progress*)\n- Find and add to queue like (or rt) some amount of posts with hashtag. Example: "#python rt 10", "#news like 5".
+set_delay A B
+This will establish the timeframe in which main account tweets will be liked/retweeted. Example: “set_delay 2 15” will spread out the likes and retweets between 2 minutes to 15 minutes. 
+
+set_percent ACTION PERCENT
+This will set the percentage of “pool” accounts that will like/retweet tweets from the main accounts. Example: “set_percent like 50” will have 50% of the “pool” accounts like all tweets from the main accounts. 
+
+#tag ACTION COUNT
+This will like/retweet random tweets that include a specific hashtag. Example: “#BSC like 15” will have the main accounts randomly like 15 tweets that use the #BSC hashtag.
 """
 
 # Logger settings - CloudWatch
@@ -77,12 +90,17 @@ def handle_message(chat_id, message):
             post_id = message.split(" ")[1]
             return set_like(db, post_id)
         if message == 'stats':
-            data = dict(
-                users=['https://twitter.com/{}'.format(u['username']) for u in db.users.find()],
-                # managers=safe_dumps(db.managers.find()),
-                sources=['https://twitter.com/{}'.format(u['username']) for u in db.sources.find()]
+            users=[u['username'] for u in db.users.find(dict(deleted=False))]
+            sources=[u['username'] for u in db.sources.find(dict(deleted=False))]
+            rt_orders=db.orders.find(dict(status='new', action='rt'))
+            like_orders=db.orders.find(dict(status='new', action='rt'))
+            text = 'Users pool({}):\n{}\n\nSources({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}'.format(
+                len(users), '\n'.join(users),
+                len(sources), '\n'.join(sources),
+                like_orders and len(list(like_orders)) or 0, 
+                rt_orders and len(list(rt_orders)) or 0, 
             )
-            return json.dumps(data, indent=4, ensure_ascii=False)
+            return text
         
     if manager["state"] == "enter_pin":
         return handle_enter_pin(db, manager, message, chat_id)
