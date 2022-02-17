@@ -91,7 +91,7 @@ def handle_add_source(db, username):
         user_data = TwitterApi.get_user_data_by_username(username)
     except Exception as e:
         print(e)
-        return 'Could not find user with username', username
+        return 'Could not find user with username "{}"'.format(username)
     user_data['deleted'] = False
     source = db.sources.find_one({"id": user_data["id"]})
     if source:

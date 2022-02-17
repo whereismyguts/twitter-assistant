@@ -96,7 +96,7 @@ def handle_message(chat_id, message):
             user = db.users.find_one({'username': re.compile(username, re.IGNORECASE)})
             if not user or user['deleted']:
                 return 'There no source: {}'.format(username)
-            db.users.update_one({'username': username}, {'deleted': True})
+            db.users.update_one({'username': username}, {'$set': {'deleted': True}})
             return 'Source {} now is removed'.format(username)
         
         if start_with(message, "del_source"):
@@ -104,7 +104,7 @@ def handle_message(chat_id, message):
             user = db.sources.find_one({'username': re.compile(username, re.IGNORECASE)})
             if not user or user['deleted']:
                 return 'There no source: {}'.format(username)
-            db.sources.update_one({'username': username}, {'deleted': True})
+            db.sources.update_one({'username': username}, {'$set': {'deleted': True}})
             return 'Source {} now is removed'.format(username)
         
         if message == 'stats':
