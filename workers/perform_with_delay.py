@@ -25,10 +25,6 @@ def perform_action(order):
             {'_id': order['_id']},
             {'$set': {'status': 'error', 'error': r['errors']}}
         )
-# group enqurue messageses by post
-# add random seconds delay
-# add del commands
-# add order stats
 
 # CRON: */1 * * * *
 if __name__ == "__main__":
@@ -54,14 +50,17 @@ if __name__ == "__main__":
         stored_settings = get_custom_settings() 
         print(stored_settings)
         
-        orders = get_random(
-            db.orders,
-            filter={
-                "status": "new",
-                "action": ACTION_TYPE,
-            },
-        )
-        
+        # orders = get_random(
+        #     db.orders,
+        #     filter={
+        #         "status": "new",
+        #         "action": ACTION_TYPE,
+        #     },
+        # )
+        orders = db.orders.find({
+            "status": "new",
+            "action": ACTION_TYPE,
+        }).sort("_id").limit(1)
         # NOTE:
         # Default orders count is 1 (recomended, because this command is executed in crontab once in a minute). 
         # Random delay before every action:
