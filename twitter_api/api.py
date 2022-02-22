@@ -178,7 +178,7 @@ class TwitterApi:
         
         
     @classmethod
-    def get_tweets_by_id(cls, user_id, last_id=None):
+    def get_tweets_by_id(cls, user_id, last_id=None, start_dt=None):
         url = "https://api.twitter.com/2/users/{}/tweets".format(user_id)
         # Tweet fields are adjustable.
         # Options include:
@@ -188,12 +188,17 @@ class TwitterApi:
         # possibly_sensitive, promoted_metrics, public_metrics, referenced_tweets,
         # source, text, and withheld
         params = {
-            "tweet.fields": "id,author_id",
+            "tweet.fields": "id,author_id,text,created_at",
             "exclude": "retweets,replies",
         }
         if last_id:
             params["since_id"] = last_id
 
+        if start_dt:
+            # 'YYYY-MM-DDTHH:mm:ssZ'
+            # params["end_time"] = end_dt.strftime("%Y-%M-%dT%H:%M:%SZ")
+            params['start_time'] = start_dt.isoformat('T')[:-3] + 'Z'
+        print(params)
         oauth = cls.create_oauth_session()
         response = oauth.get(url, params=params)
         print(response.status_code)
@@ -210,4 +215,6 @@ class TwitterApi:
 
 
 if __name__ == "__main__":
-    TwitterApi.get_user_data_by_username("whereismyguts")
+    tweets = TwitterApi.get_tweets_by_id(source['id'], last_id=source['last_id'], end_dt=source['created'])
+    print(tweets)
+    

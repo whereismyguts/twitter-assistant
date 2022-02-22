@@ -1,4 +1,5 @@
 import traceback
+import datetime
 from twitter_api.api import TwitterApi
 
 
@@ -94,10 +95,12 @@ def handle_add_source(db, username):
         return 'Could not find user with username "{}"'.format(username)
     user_data['deleted'] = False
     source = db.sources.find_one({"id": user_data["id"]})
+    user_data['created'] = datetime.datetime.utcnow()
     if source:
         if not source['deleted']:
             return "@{} is already in source list".format(username)
-        db.source.update_one({"id": user_data["id"]}, {'$set': user_data})
+        
+        db.sources.update_one({"id": user_data["id"]}, {'$set': user_data})
         return "@{} revoked in source list ✅".format(username)
     else:    
         db.sources.insert_one(user_data)

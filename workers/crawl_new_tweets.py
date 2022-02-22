@@ -8,7 +8,7 @@ from database.mongo import db
 from twitter_api.api import TwitterApi
 from settings import debug_chat
 from telegram_bot.services import send_to_all_managers
-
+import datetime
 
 LIKE_USER_PERCENT = 0.8
 RT_USER_PERCENT = 0.5
@@ -30,7 +30,16 @@ def get_users():
 
 def get_posts_from_source(source):
     # posts = [dict(id=get_id(), last_id=get_id()) for i in range(1)]
-    posts = TwitterApi.get_tweets_by_id(source["id"], last_id=source.get("last_id"))
+    last_id=source.get("last_id")
+    if last_id:
+        params = {'last_id': last_id}
+    else:
+        params = {'start_dt': source['created'] }
+
+    posts = TwitterApi.get_tweets_by_id(
+        source["id"], 
+        **params
+    )
     if posts:
         source["last_id"] = max([p["id"] for p in posts])
         db.sources.update_one(
@@ -56,6 +65,7 @@ def create_order(post, user, action):
             action=action,
             user=user,
             post=post,
+            created=datetime.datetime.utcnow(),
             status="new",
         )
     )
