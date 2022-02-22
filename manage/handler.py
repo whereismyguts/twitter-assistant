@@ -134,7 +134,7 @@ def handle_message(chat_id, message):
             users=[u['username'] for u in db.users.find(dict(deleted=False))]
             sources=[u['username'] for u in db.sources.find(dict(deleted=False))]
             rt_orders=db.orders.find(dict(status='new', action='rt'))
-            like_orders=db.orders.find(dict(status='new', action='rt'))
+            like_orders=db.orders.find(dict(status='new', action='like'))
             text = 'Users pool({}):\n{}\n\nSources({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}'.format(
                 len(users), '\n'.join(users),
                 len(sources), '\n'.join(sources),
