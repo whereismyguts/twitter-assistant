@@ -96,16 +96,39 @@ def handle_message(chat_id, message):
             user = db.users.find_one({'username': re.compile(username, re.IGNORECASE)})
             if not user or user['deleted']:
                 return 'There no follower: {}'.format(username)
-            db.users.update_one({'username': username}, {'$set': {'deleted': True}})
-            return 'Follower {} now is removed'.format(username)
+            
+            r = db.orders.delete_many({
+                "user.username": username, 
+                'status': 'new',
+            })
+            removed = r and r.raw_result["n"] or 0
+            db.users.update_one(
+                {'username': username}, 
+                {'$set': {
+                    'deleted': True,
+                }})
+            result =  'Follower {} now is removed'.format(username)
+            if removed:
+                result += '\n{} pending actions in cancelled'.format(removed)
+            return result
         
         if start_with(message, "del_source"):
             username = message.split(" ")[1].lower()
             user = db.sources.find_one({'username': re.compile(username, re.IGNORECASE)})
             if not user or user['deleted']:
                 return 'There no source: {}'.format(username)
+            
+            r = db.orders.delete_many({
+                "post.author_id": user['id'], 
+                'status': 'new',
+            })
+            removed = r and r.raw_result["n"] or 0
             db.sources.update_one({'username': username}, {'$set': {'deleted': True}})
-            return 'Source {} now is removed'.format(username)
+            
+            result = 'Source {} now is removed.'.format(username) 
+            if removed:
+                result += '\n{} pending actions in cancelled'.format(removed)
+            return result
         
         if message == 'stats':
             users=[u['username'] for u in db.users.find(dict(deleted=False))]
