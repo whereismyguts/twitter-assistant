@@ -70,7 +70,7 @@ if __name__ == "__main__":
                 stored_settings['DELAY_MINUTES_MAX'], 
             )
             print(delay, 'minutes sleep...')
-            time.sleep(delay*60)
+            time.sleep(delay*60 + random.randint(0,10))
             print(delay, 'sleep is over.')
             
             if perform_action(order):
