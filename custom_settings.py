@@ -10,7 +10,7 @@ DEFAULT_SETTINGS = {
 def get_custom_settings():
     settings = db.settings.find_one() or dict()
     for key, val in DEFAULT_SETTINGS.items():
-        settings[key] = settings.get(key) or val
+        settings[key] = settings.get(key) if settings.get(key) is not None else val
     return settings
 
 
