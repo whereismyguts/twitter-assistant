@@ -95,9 +95,9 @@ def handle_message(chat_id, message):
             username = message.split(" ")[1].lower()
             user = db.users.find_one({'username': re.compile(username, re.IGNORECASE)})
             if not user or user['deleted']:
-                return 'There no source: {}'.format(username)
+                return 'There no follower: {}'.format(username)
             db.users.update_one({'username': username}, {'$set': {'deleted': True}})
-            return 'Source {} now is removed'.format(username)
+            return 'Follower {} now is removed'.format(username)
         
         if start_with(message, "del_source"):
             username = message.split(" ")[1].lower()
