@@ -1,4 +1,5 @@
 import traceback, json
+from custom_settings import set_custom_settings
 from bson.json_util import dumps
 from manage.manage_handlers import (
     handle_add_follower,
@@ -142,7 +143,22 @@ def handle_message(chat_id, message):
                 rt_orders and len(list(rt_orders)) or 0, 
             )
             return text
-        
+        if start_with(message, "set_delay"):
+            try:
+                start = int(message.split(" ")[1])
+                end = int(message.split(" ")[2])
+            except Exception as e:
+                print(e, traceback.format_exc())
+                return "Can't recognize format 'set_delay A B'"
+            if end < 0 or start < 0:
+                return "A and B must be greater than 0"
+            if end <= start: 
+                return '"A" must be greater than "B"'
+            set_custom_settings({
+                'DELAY_MINUTES_MAX': end,
+                'DELAY_MINUTES_MIN': start,
+            })
+            return 'Delay is set to {}-{} minutes'.format(start, end)
     if manager["state"] == "enter_pin":
         return handle_enter_pin(db, manager, message, chat_id)
     return ""
