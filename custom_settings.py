@@ -13,7 +13,10 @@ def get_custom_settings():
     settings = db.settings.find_one() or dict()
     for key, val in DEFAULT_SETTINGS.items():
         settings[key] = settings.get(key) if settings.get(key) is not None else val
+    settings = dict(settings)
+    del settings['_id']
     return settings
+
 
 
 def set_custom_settings(data):
