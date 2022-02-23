@@ -1,5 +1,7 @@
+from time import perf_counter
 import traceback, json
 from custom_settings import set_custom_settings
+from twitter_api.api import TwitterApi
 from bson.json_util import dumps
 from manage.manage_handlers import (
     handle_add_follower,
@@ -7,6 +9,9 @@ from manage.manage_handlers import (
     handle_enter_pin,
 )
 import re
+from workers import get_some_users, create_order
+from telegram_bot.services import send_to_all_managers
+from custom_settings import get_custom_settings
 
 COMMANDS_HELP = """
 help
@@ -91,6 +96,50 @@ def handle_message(chat_id, message):
         # if start_with(message, "like"):
         #     post_id = message.split(" ")[1]
         #     return set_like(db, post_id)
+        
+        if start_with(message, "#"):
+            try:
+                if len(message.split(' ')) != 3:
+                    raise Exception("{} is not 3 parts".format(message))
+                tag, action, count = message.split(' ')
+                count = int(count)
+                if count < 10 or count > 100:
+                    return 'The COUNT must be between 10 and 100'
+                if action not in ['like', 'rt']:
+                    return 'The ACTION value must be one of ["like", "rt"]'
+                
+                custom_settings = get_custom_settings()
+                posts = TwitterApi.get_tweets_by_query(tag, count)
+                for post in posts:
+                    for user in get_some_users(percent=custom_settings['LIKE_USER_PERCENT']):
+                        text = create_order(post, user, "like")
+                        if text:
+                            send_to_all_managers(text)
+                    for user in get_some_users(percent=custom_settings['RT_USER_PERCENT']):
+                        text = create_order(post, user, "rt")
+                        if text:
+                            send_to_all_managers(text)                
+            except Exception as e:
+                print("TAG parse error:")
+                print(e, traceback.format_exc())
+                return "Can't parse the tag command!"
+            
+        if start_with(message, "set_percent"):
+            try:
+                _, action, percent = message.split(' ')
+                action = action.upper()
+                if action not in ['RT', 'LIKE']:
+                    return 'The ACTION value must be one of ["like", "rt"]'
+                if percent > 1 or percent < 0:
+                    return 'The PERCENT value must be between 0 and 1'
+            except Exception as e:
+                print("PERCENT parse error:")
+                print(e, traceback.format_exc())
+                return "Can't parse the set_percent command!"
+            
+            key = action + '_USER_PERCENT'
+            set_custom_settings({key: percent})
+            return '{} percent changed to {}'.format(action, percent)
         
         if start_with(message, "del_follower"):
             username = message.split(" ")[1].lower()

@@ -3,6 +3,8 @@ from database.mongo import db
 DEFAULT_SETTINGS = {
     'DELAY_MINUTES_MAX': 15,
     'DELAY_MINUTES_MIN': 1,
+    'LIKE_USER_PERCENT': 0.8,
+    'RT_USER_PERCENT': 0.5,
 }
 
 # db.settings.insert_one(DEFAULT_SETTINGS)

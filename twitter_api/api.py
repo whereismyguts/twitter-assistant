@@ -34,6 +34,21 @@ class TwitterApi:
         print(json.dumps(response.json(), indent=4, sort_keys=True))
         return response.json()["data"][0]
 
+    @classmethod
+    def get_tweets_by_query(cls, query, count):
+        oauth = cls.create_oauth_session()
+        params = {"query": query + ' -is:retweet', "max_results": count}
+        response = oauth.get('https://api.twitter.com/2/tweets/search/recent', params=params)
+        if response.status_code != 200:
+            raise Exception(
+                "Request returned an error: {} {}".format(
+                    response.status_code, response.text
+                )
+            )
+        json_response = response.json()["data"]
+        print(json.dumps(json_response, indent=4, sort_keys=True))
+        return json_response
+    
     def get_user_data_me(access_token, access_token_secret):
         oauth = OAuth1Session(consumer_key, client_secret=consumer_secret)
 
@@ -215,6 +230,5 @@ class TwitterApi:
 
 
 if __name__ == "__main__":
-    tweets = TwitterApi.get_tweets_by_id(source['id'], last_id=source['last_id'], end_dt=source['created'])
-    print(tweets)
+    TwitterApi.get_tweets_by_query('#python', 15)
     
