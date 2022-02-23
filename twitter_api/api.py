@@ -37,7 +37,11 @@ class TwitterApi:
     @classmethod
     def get_tweets_by_query(cls, query, count):
         oauth = cls.create_oauth_session()
-        params = {"query": query + ' -is:retweet', "max_results": count}
+        params = {
+            "query": query + ' -is:retweet', 
+            "max_results": count,
+            "tweet.fields": "id,author_id,text,created_at",
+        }
         response = oauth.get('https://api.twitter.com/2/tweets/search/recent', params=params)
         if response.status_code != 200:
             raise Exception(
