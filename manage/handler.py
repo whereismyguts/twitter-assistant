@@ -12,7 +12,7 @@ import re
 from workers.crawl_new_tweets import get_some_users, create_order
 from telegram_bot.services import send_to_all_managers
 from custom_settings import get_custom_settings
-
+from telegram_bot.services import get_bot
 COMMANDS_HELP = """
 help
 This will show the various commands that can be used with this bot. 
@@ -109,16 +109,28 @@ def handle_message(chat_id, message):
                     return 'The ACTION value must be one of ["like", "rt"]'
                 
                 custom_settings = get_custom_settings()
-                posts = TwitterApi.get_tweets_by_query(tag, count)
+                
+                posts = list(TwitterApi.get_tweets_by_query(tag, count))
+                user_count =  len(posts) * len(get_some_users(percent=custom_settings['{}_USER_PERCENT'.format(action.upper())]))
+                bot = get_bot()
+                bot.sendMessage(chat_id, 'Found {} tweets. We creating about {} {} orders, this may take some time, see the log'.format(
+                    len(list(posts)), 
+                    action.lower(),
+                    user_count,
+                ))
+                user_count = 0
                 for post in posts:
-                    for user in get_some_users(percent=custom_settings['LIKE_USER_PERCENT']):
-                        text = create_order(post, user, "like")
+                    for user in get_some_users(percent=custom_settings['{}_USER_PERCENT'.format(action.upper())]):
+                        text = create_order(post, user, action.lower())
                         if text:
                             send_to_all_managers(text)
-                    for user in get_some_users(percent=custom_settings['RT_USER_PERCENT']):
-                        text = create_order(post, user, "rt")
-                        if text:
-                            send_to_all_managers(text)                
+                        user_count += 1
+                return 'Found {} tweets with {} hastag. Created {} {} orders.'.format(
+                    len(list(posts)), 
+                    tag,
+                    action.lower(),
+                    user_count,
+                )            
             except Exception as e:
                 print("TAG parse error:")
                 print(e, traceback.format_exc())
