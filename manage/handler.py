@@ -115,8 +115,8 @@ def handle_message(chat_id, message):
                 bot = get_bot()
                 bot.sendMessage(chat_id, 'Found {} tweets. We creating about {} {} orders, this may take some time, see the log'.format(
                     len(list(posts)), 
-                    action.lower(),
                     user_count,
+                    action.lower(),
                 ))
                 user_count = 0
                 for post in posts:
@@ -128,8 +128,8 @@ def handle_message(chat_id, message):
                 return 'Found {} tweets with {} hastag. Created {} {} orders.'.format(
                     len(list(posts)), 
                     tag,
-                    action.lower(),
                     user_count,
+                    action.lower(),
                 )            
             except Exception as e:
                 print("TAG parse error:")
