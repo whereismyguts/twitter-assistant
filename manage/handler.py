@@ -185,11 +185,13 @@ def handle_message(chat_id, message):
             sources=[u['username'] for u in db.sources.find(dict(deleted=False))]
             rt_orders=db.orders.find(dict(status='new', action='rt'))
             like_orders=db.orders.find(dict(status='new', action='like'))
-            text = 'Users pool({}):\n{}\n\nSources({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}'.format(
+            errors = db.orders.find(dict(status='error'))
+            text = 'Users pool({}):\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors: {}'.format(
                 len(users), '\n'.join(users),
                 len(sources), '\n'.join(sources),
                 like_orders and len(list(like_orders)) or 0, 
                 rt_orders and len(list(rt_orders)) or 0, 
+                errors and len(list(errors)) or 0,
             )
             return text
         if start_with(message, "set_delay"):

@@ -14,12 +14,15 @@ import datetime
 import traceback
 
 def perform_action(order):
-    if order['action'] == 'like':
-        r = TwitterApi.set_like(order["user"], order["post"]["id"])
-        return r.get("data", {}).get("liked")
-    elif order['action'] == 'rt':
-        r = TwitterApi.retweet(order["user"], order["post"]["id"])
-        return r.get("data", {}).get("retweeted") 
+    try:
+        if order['action'] == 'like':
+            r = TwitterApi.set_like(order["user"], order["post"]["id"])
+            return r.get("data", {}).get("liked")
+        elif order['action'] == 'rt':
+            r = TwitterApi.retweet(order["user"], order["post"]["id"])
+            return r.get("data", {}).get("retweeted") 
+    except Exception as e:
+        r = {'errors': str(e)}
     if 'errors' in r:
         db.orders.update_one(
             {'_id': order['_id']},
