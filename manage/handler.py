@@ -130,6 +130,7 @@ def handle_message(chat_id, message):
                 action = action.upper()
                 if action not in ['RT', 'LIKE']:
                     return 'The ACTION value must be one of ["like", "rt"]'
+                percent = float(percent)
                 if percent > 1 or percent < 0:
                     return 'The PERCENT value must be between 0 and 1'
             except Exception as e:
@@ -186,12 +187,13 @@ def handle_message(chat_id, message):
             rt_orders=db.orders.find(dict(status='new', action='rt'))
             like_orders=db.orders.find(dict(status='new', action='like'))
             errors = db.orders.find(dict(status='error'))
-            text = 'Users pool({}):\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors: {}'.format(
+            text = 'Users pool({}):\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors:{}\n\nConfiguration values:{}'.format(
                 len(users), '\n'.join(users),
                 len(sources), '\n'.join(sources),
                 like_orders and len(list(like_orders)) or 0, 
                 rt_orders and len(list(rt_orders)) or 0, 
                 errors and len(list(errors)) or 0,
+                json.dumps(get_custom_settings(), indent=4)
             )
             return text
         if start_with(message, "set_delay"):
