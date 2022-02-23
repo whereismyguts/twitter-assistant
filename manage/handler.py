@@ -9,7 +9,7 @@ from manage.manage_handlers import (
     handle_enter_pin,
 )
 import re
-from workers import get_some_users, create_order
+from workers.crawl_new_tweets import get_some_users, create_order
 from telegram_bot.services import send_to_all_managers
 from custom_settings import get_custom_settings
 
