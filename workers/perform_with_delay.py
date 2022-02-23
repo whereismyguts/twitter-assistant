@@ -88,7 +88,7 @@ if __name__ == "__main__":
                     )},
                 )
                 msg = "{}{} is DONE after {}min delay.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
-                    emojis.get((order["action"], 'DONE'), '')
+                    emojis.get((order["action"], 'DONE'), ''),
                     order["action"],
                     delay,
                     order["user"]["username"],
