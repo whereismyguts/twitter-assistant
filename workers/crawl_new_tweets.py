@@ -68,7 +68,7 @@ def create_order(post, user, action):
         )
     )
 
-    msg = "{}{} is ENQUEUED.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+    msg = "{}{} is ENQUEUED.\nfollower: @{}\npost: {}".format(
         emojis.get((action, 'ENQUEUED'), ''),
         action,
         user["username"],
@@ -76,7 +76,6 @@ def create_order(post, user, action):
             post['author_id'],
             post["id"],
         ),
-        post["text"],
     )
     return msg
 

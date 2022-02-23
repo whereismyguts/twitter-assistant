@@ -10,10 +10,10 @@ DEFAULT_SETTINGS = {
 # db.settings.insert_one(DEFAULT_SETTINGS)
 
 emojis = {
-    ('like', 'ENQUEUED'): '💛',
-    ('rt', 'ENQUEUED'): '🟨',
-    ('like', 'DONE'):'💚',
-    ('rt', 'DONE'):'🟩',
+    ('like', 'ENQUEUED'): '💛 ',
+    ('rt', 'ENQUEUED'): '🟨 ',
+    ('like', 'DONE'):'💚 ',
+    ('rt', 'DONE'):'🟩 ',
 }
 
 def get_custom_settings():

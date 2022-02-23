@@ -87,7 +87,7 @@ if __name__ == "__main__":
                         time=datetime.datetime.utcnow(),
                     )},
                 )
-                msg = "{}{} is DONE after {}min delay.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+                msg = "{}{} is DONE after {}min delay.\nfollower: @{}\npost: {}".format(
                     emojis.get((order["action"], 'DONE'), ''),
                     order["action"],
                     delay,
@@ -96,7 +96,6 @@ if __name__ == "__main__":
                         order["post"].get("author_id", 'none'),
                         order["post"]["id"],
                     ),
-                    order["post"]["text"],
                 )
                 send_to_all_managers(msg)
                 
