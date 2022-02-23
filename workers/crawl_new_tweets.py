@@ -8,10 +8,8 @@ from database.mongo import db
 from twitter_api.api import TwitterApi
 from settings import debug_chat
 from telegram_bot.services import send_to_all_managers
+from custom_settings import get_custom_settings, emojis
 import datetime
-
-LIKE_USER_PERCENT = 0.8
-RT_USER_PERCENT = 0.5
 
 
 # posts = db.posts
@@ -70,7 +68,8 @@ def create_order(post, user, action):
         )
     )
 
-    msg = "{} is ENQUEUED.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+    msg = "{}{} is ENQUEUED.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+        emojis.get((action, 'ENQUEUED'), ''),
         action,
         user["username"],
         'https://twitter.com/{}/status/{}'.format(
@@ -83,17 +82,18 @@ def create_order(post, user, action):
 
 
 if __name__ == "__main__":
+    custom_settings = get_custom_settings()
     sources = get_sources()
     for source in sources:
         posts = get_posts_from_source(source)
         # print(source)
         text = ''
         for post in posts:
-            for user in get_some_users(percent=LIKE_USER_PERCENT):
+            for user in get_some_users(percent=custom_settings['LIKE_USER_PERCENT']):
                 text = create_order(post, user, "like")
                 if text:
                     send_to_all_managers(text)
-            for user in get_some_users(percent=RT_USER_PERCENT):
+            for user in get_some_users(percent=custom_settings['RT_USER_PERCENT']):
                 text = create_order(post, user, "rt")
                 if text:
                     send_to_all_managers(text)

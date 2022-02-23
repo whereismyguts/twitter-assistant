@@ -11,6 +11,7 @@ import argparse
 import time
 import random
 import datetime
+from custom_settings import emojis
 import traceback
 
 def perform_action(order):
@@ -86,7 +87,8 @@ if __name__ == "__main__":
                         time=datetime.datetime.utcnow(),
                     )},
                 )
-                msg = "{} is DONE after {}min delay.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+                msg = "{}{} is DONE after {}min delay.\nfollower: @{}\npost: {}\ncontent: '{}'".format(
+                    emojis.get((order["action"], 'DONE'), '')
                     order["action"],
                     delay,
                     order["user"]["username"],
