@@ -66,7 +66,34 @@ if __name__ == "__main__":
         orders = db.orders.find({
             "status": "new",
             "action": ACTION_TYPE,
-        }).sort("_id").limit(1)
+        }).sort("_id")
+        
+        orders = list(orders)
+        print('orders: ', len(orders))
+        if len(orders) == 0:
+          raise Exception("No orders found!")  
+        
+        for order in orders:
+            user = db.users.find_one({'id': order['user']['id']})
+            
+            if user['status'] != 'ok':
+                print(user['username'], 'user is', user['status'])
+                continue    
+            
+            if 'last_request' in user:
+                lr = user['last_request']
+                time_from_lr = datetime.datetime.utcnow() - lr
+                if time_from_lr.total_seconds() < 5*60:
+                    print('{} was used recently ({}), need to wait for {} sec'.format(
+                        user['username'], lr, 5*60 - time_from_lr.total_seconds()
+                    ))
+                    continue
+            print('got a suitable order:\n', order)    
+            break
+        else:
+            print("can't find suitable users now.")
+            
+        # 'user.status': { '$ne': 'ok' } 
         # NOTE:
         # Default orders count is 1 (recomended, because this command is executed in crontab once in a minute). 
         # Random delay before every action:
@@ -80,6 +107,10 @@ if __name__ == "__main__":
             print(delay, 'sleep is over.')
             
             if perform_action(order):
+                db.users.update_one(
+                    {'id': order['user']['id']},
+                    {'$set': {'last_request': datetime.datetime.utcnow()}},
+                )
                 db.orders.update_one(
                     dict(_id=order["_id"]),
                     {"$set": dict(

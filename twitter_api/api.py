@@ -11,7 +11,7 @@ class TwitterApi:
     @classmethod
     def get_user(cls):
         if cls._user is None:
-            cls._user = db.users.find_one()
+            cls._user = db.users.find_one({'status': 'ok'})
         if not cls._user:
             raise Exception("need at least one user authorized")
         return cls._user
@@ -26,6 +26,26 @@ class TwitterApi:
             resource_owner_secret=user["access_token_secret"],
         )
 
+    @classmethod
+    def check_all_users(cls):
+        users=list(db.users.find(dict(deleted=False)))
+        params = {"usernames": 'jack', "user.fields": "id,name,username"}
+        
+        for u in users:
+            oauth = cls.create_oauth_session(user=u)
+            response = oauth.get("https://api.twitter.com/2/users/by", params=params)
+            if 'status' in response.json() and response.json()['status'] == 403:
+                print(u['username'])
+                u['status'] = 'blocked'
+            else:
+                # print(u['username'])
+                print(response.text)
+                u['status'] = 'ok'
+            db.users.update_one(
+                {"id": u['id']},
+                {"$set": u},
+            )
+            
     @classmethod
     def get_user_data_by_username(cls, username):
         params = {"usernames": username, "user.fields": "id,name,username"}
