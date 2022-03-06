@@ -59,7 +59,11 @@ def run():
         except KeyboardInterrupt:
             print("CLOSE")
             exit()
-
+        except Exception as e:
+            print(e, traceback.format_exc())
+            print('try again...')
+            time.sleep(10)
+            
         time.sleep(3)
 
 

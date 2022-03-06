@@ -91,44 +91,41 @@ if __name__ == "__main__":
             print('got a suitable order:\n', order)    
             break
         else:
-            print("can't find suitable users now.")
-            
+            raise Exception("Can't find suitable users now.")
         # 'user.status': { '$ne': 'ok' } 
-        # NOTE:
-        # Default orders count is 1 (recomended, because this command is executed in crontab once in a minute). 
-        # Random delay before every action:
-        for order in orders:
-            delay = random.randint(
-                stored_settings['DELAY_MINUTES_MIN'],
-                stored_settings['DELAY_MINUTES_MAX'], 
+        
+        
+        delay = random.randint(
+            stored_settings['DELAY_MINUTES_MIN'],
+            stored_settings['DELAY_MINUTES_MAX'], 
+        )
+        print(delay, 'minutes sleep...')
+        time.sleep(delay*60 + random.randint(0,10))
+        print(delay, 'sleep is over.')
+        
+        if perform_action(order):
+            db.users.update_one(
+                {'id': order['user']['id']},
+                {'$set': {'last_request': datetime.datetime.utcnow()}},
             )
-            print(delay, 'minutes sleep...')
-            time.sleep(delay*60 + random.randint(0,10))
-            print(delay, 'sleep is over.')
-            
-            if perform_action(order):
-                db.users.update_one(
-                    {'id': order['user']['id']},
-                    {'$set': {'last_request': datetime.datetime.utcnow()}},
-                )
-                db.orders.update_one(
-                    dict(_id=order["_id"]),
-                    {"$set": dict(
-                        status="done",
-                        time=datetime.datetime.utcnow(),
-                    )},
-                )
-                msg = "{}{} is DONE after {}min delay.\nfollower: @{}\npost: {}".format(
-                    emojis.get((order["action"], 'DONE'), ''),
-                    order["action"],
-                    delay,
-                    order["user"]["username"],
-                    "https://twitter.com/{}/status/{}".format(
-                        order["post"].get("author_id", 'none'),
-                        order["post"]["id"],
-                    ),
-                )
-                send_to_all_managers(msg)
+            db.orders.update_one(
+                dict(_id=order["_id"]),
+                {"$set": dict(
+                    status="done",
+                    time=datetime.datetime.utcnow(),
+                )},
+            )
+            msg = "{}{} is DONE after {}min delay.\nfollower: @{}\npost: {}".format(
+                emojis.get((order["action"], 'DONE'), ''),
+                order["action"],
+                delay,
+                order["user"]["username"],
+                "https://twitter.com/{}/status/{}".format(
+                    order["post"].get("author_id", 'none'),
+                    order["post"]["id"],
+                ),
+            )
+            send_to_all_managers(msg)
                 
         
     except Exception as e:
