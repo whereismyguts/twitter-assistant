@@ -25,12 +25,22 @@ def perform_action(order):
             return r.get("data", {}).get("retweeted") 
 
     except Exception as e:
+        print(e, traceback.format_exc())
         r = {'errors': str(e)}
     if 'errors' in r:
+        if 'temporarily locked' in r['errors']:
+            status = 'error'
+        elif 'tweet cannot be found' in r['errors']:
+            status = 'done'
+        else:
+            status = 'new'
+        new_data = {'status': status, 'error': r['errors']}    
+        order.update(new_data)
         db.orders.update_one(
             {'_id': order['_id']},
-            {'$set': {'status': 'error', 'error': r['errors']}}
+            {'$set': new_data}
         )
+        return status
 
 # CRON: */1 * * * *
 if __name__ == "__main__":
@@ -103,19 +113,20 @@ if __name__ == "__main__":
         time.sleep(delay*60 + random.randint(0,10))
         print(delay, 'sleep is over.')
         
-        if perform_action(order):
-            db.users.update_one(
-                {'id': order['user']['id']},
-                {'$set': {'last_request': datetime.datetime.utcnow()}},
-            )
-            db.orders.update_one(
-                dict(_id=order["_id"]),
-                {"$set": dict(
-                    status="done",
-                    time=datetime.datetime.utcnow(),
-                )},
-            )
-            msg = "{}{} is DONE after {}min delay.\nfollower: @{}\npost: {}".format(
+        status = perform_action(order)
+        db.users.update_one(
+            {'id': order['user']['id']},
+            {'$set': {'last_request': datetime.datetime.utcnow()}},
+        )
+        db.orders.update_one(
+            dict(_id=order["_id"]),
+            {"$set": dict(
+                status=status,
+                time=datetime.datetime.utcnow(),
+            )},
+        )
+        if status == 'done':
+            msg = "{}{} is DONE after {}min delay.\n\nfollower: @{}\npost: {}".format(
                 emojis.get((order["action"], 'DONE'), ''),
                 order["action"],
                 delay,
@@ -125,7 +136,18 @@ if __name__ == "__main__":
                     order["post"]["id"],
                 ),
             )
-            send_to_all_managers(msg)
+
+        else: 
+            msg = '⚠️ {} is FAILED: {}\n\nfollower: @{}\npost: {}'.format(
+                order["action"],
+                order['error'],
+                order["user"]["username"],
+                "https://twitter.com/{}/status/{}".format(
+                    order["post"].get("author_id", 'none'),
+                    order["post"]["id"],
+                ),
+            )
+        send_to_all_managers(msg)
                 
         
     except Exception as e:
