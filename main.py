@@ -29,11 +29,12 @@ def handle(msg):
     handler = ManageHandler(msg, bot)
     handler.handle()
 
-
+# state_file = 'state_test.pickle'
+state_file = 'state.pickle'
 def run():
 
-    if os.path.exists("state.pickle"):
-        with open("state.pickle", "rb") as state_pickle:
+    if os.path.exists(state_file):
+        with open(state_file, "rb") as state_pickle:
             state = pickle.load(state_pickle)
             print("load:", state)
     else:
@@ -52,7 +53,7 @@ def run():
                 handler.handle()
 
                 state["last_id"] = r["update_id"]
-                with open("state.pickle", "wb") as state_pickle:
+                with open(state_file, "wb") as state_pickle:
                     print("dump:", state)
                     pickle.dump(state, state_pickle)
 
