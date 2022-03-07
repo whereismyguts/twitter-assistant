@@ -88,6 +88,9 @@ if __name__ == "__main__":
         # print(source)
         text = ''
         for post in posts:
+            if post.get('in_reply_to_user_id'): # don't act with replies
+                print('skiped:' ,post['id'], post['text'])
+                continue
             for user in get_some_users(percent=custom_settings['LIKE_USER_PERCENT']):
                 text = create_order(post, user, "like")
                 if text:

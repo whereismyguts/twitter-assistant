@@ -227,7 +227,7 @@ class TwitterApi:
         # possibly_sensitive, promoted_metrics, public_metrics, referenced_tweets,
         # source, text, and withheld
         params = {
-            "tweet.fields": "id,author_id,text,created_at",
+            "tweet.fields": "id,author_id,text,created_at,in_reply_to_user_id",
             "exclude": "retweets,replies",
         }
         if last_id:
@@ -254,5 +254,4 @@ class TwitterApi:
 
 
 if __name__ == "__main__":
-    TwitterApi.get_tweets_by_query('#python', 15)
-    
+    pass
