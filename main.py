@@ -2,12 +2,11 @@
 # import telepot
 from telegram_bot.manage_bot import ManageHandler
 
-import urllib3
+# import urllib3
 import traceback
 
 # from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
-import json
-
+import argparse
 import time
 import pickle
 import os
@@ -22,17 +21,23 @@ from telegram_bot.services import get_bot
 # telepot.api._onetime_pool_spec = (urllib3.ProxyManager, dict(proxy_url=proxy_url, num_pools=1, maxsize=1, retries=False, timeout=30))
 
 
-bot = get_bot()
 
 
-def handle(msg):
-    handler = ManageHandler(msg, bot)
-    handler.handle()
+
+# def handle(msg):
+#     handler = ManageHandler(msg, bot)
+#     handler.handle()
 
 # state_file = 'state_test.pickle'
-state_file = 'state.pickle'
-def run():
+from settings import BOTS_POOL
 
+def run_bot(bot_alias):
+    if bot_alias not in BOTS_POOL:
+        raise ValueError(bot_alias, 'not in the bots pool!')
+    bot_data = BOTS_POOL[bot_alias]
+    bot = get_bot(bot_data['bot_key'])
+    state_file = bot_data['state_file']
+    
     if os.path.exists(state_file):
         with open(state_file, "rb") as state_pickle:
             state = pickle.load(state_pickle)
@@ -41,15 +46,13 @@ def run():
         state = dict(last_id=0)
     print("serving...")
     while 1:
-
         try:
-
             response = bot.getUpdates()
             for r in response:
                 if state["last_id"] >= r["update_id"]:
                     continue
 
-                handler = ManageHandler(r, bot)
+                handler = ManageHandler(r, bot, bot_alias)
                 handler.handle()
 
                 state["last_id"] = r["update_id"]
@@ -69,4 +72,7 @@ def run():
 
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-n", "--name")
+    args = parser.parse_args()
+    run_bot(args.name)

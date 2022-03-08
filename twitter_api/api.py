@@ -1,24 +1,28 @@
 from settings import consumer_key, consumer_secret
-from database.mongo import db
 from requests_oauthlib import OAuth1Session
+from database.mongo import get_database
 import json
 
 
-class TwitterApi:
+class TwitterApi():
 
     _user = None
 
-    @classmethod
-    def get_user(cls):
-        if cls._user is None:
-            cls._user = db.users.find_one({'status': 'ok'})
-        if not cls._user:
+    def __init__(self, alias=None, db=None):
+        if not db:
+            self.db = get_database(alias)
+        else:
+            self.db = db
+        
+    def get_user(self):
+        if self._user is None:
+            self._user = self.db.users.find_one({'status': 'ok'})
+        if not self._user:
             raise Exception("need at least one user authorized")
-        return cls._user
+        return self._user
 
-    @classmethod
-    def create_oauth_session(cls, user=None):
-        user = user or cls.get_user()
+    def create_oauth_session(self, user=None):
+        user = user or self.get_user()
         return OAuth1Session(
             consumer_key,
             client_secret=consumer_secret,
@@ -26,13 +30,13 @@ class TwitterApi:
             resource_owner_secret=user["access_token_secret"],
         )
 
-    @classmethod
-    def check_all_users(cls):
-        users=list(db.users.find(dict(deleted=False)))
+
+    def check_all_users(self):
+        users=list(self.users.find(dict(deleted=False)))
         params = {"usernames": 'jack', "user.fields": "id,name,username"}
         
         for u in users:
-            oauth = cls.create_oauth_session(user=u)
+            oauth = self.create_oauth_session(user=u)
             response = oauth.get("https://api.twitter.com/2/users/by", params=params)
             if 'status' in response.json() and response.json()['status'] == 403:
                 print(u['username'])
@@ -41,22 +45,20 @@ class TwitterApi:
                 # print(u['username'])
                 print(response.text)
                 u['status'] = 'ok'
-            db.users.update_one(
+            self.db.users.update_one(
                 {"id": u['id']},
                 {"$set": u},
             )
             
-    @classmethod
-    def get_user_data_by_username(cls, username):
+    def get_user_data_by_username(self, username):
         params = {"usernames": username, "user.fields": "id,name,username"}
-        oauth = cls.create_oauth_session()
+        oauth = self.create_oauth_session()
         response = oauth.get("https://api.twitter.com/2/users/by", params=params)
         print(json.dumps(response.json(), indent=4, sort_keys=True))
         return response.json()["data"][0]
 
-    @classmethod
-    def get_tweets_by_query(cls, query, count):
-        oauth = cls.create_oauth_session()
+    def get_tweets_by_query(self, query, count):
+        oauth = self.create_oauth_session()
         params = {
             "query": query + ' -is:retweet', 
             "max_results": count,
@@ -216,8 +218,7 @@ class TwitterApi:
         print(json.dumps(json_response, indent=4, sort_keys=True))
         
         
-    @classmethod
-    def get_tweets_by_id(cls, user_id, last_id=None, start_dt=None):
+    def get_tweets_by_id(self, user_id, last_id=None, start_dt=None):
         url = "https://api.twitter.com/2/users/{}/tweets".format(user_id)
         # Tweet fields are adjustable.
         # Options include:
@@ -238,7 +239,7 @@ class TwitterApi:
             # params["end_time"] = end_dt.strftime("%Y-%M-%dT%H:%M:%SZ")
             params['start_time'] = start_dt.isoformat('T')[:-3] + 'Z'
         print(params)
-        oauth = cls.create_oauth_session()
+        oauth = self.create_oauth_session()
         response = oauth.get(url, params=params)
         print(response.status_code)
         if response.status_code != 200:

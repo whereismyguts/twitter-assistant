@@ -1,19 +1,16 @@
 import telepot
-from settings import BOT_KEY
-from database.mongo import db
-from settings import debug_chat
+from settings import debug_chat, BOTS_POOL
 import traceback,time
 
-def get_bot():
-    return telepot.Bot(BOT_KEY)
+def get_bot(bot_key):
+    return telepot.Bot(bot_key)
 
-
-def send_to_all_managers(msg):
-    msg = "[INFO]: " + msg
-    print(msg)
+def send_debug(bot, alias, msg):
+    emoji = BOTS_POOL[alias]['emoji']
+    debug_text = '[DEBUG]{}: {} BOT\n{}'.format(emoji, alias.upper(), msg)
     for i in range(2):
         try:
-            get_bot().sendMessage(debug_chat, msg)
+            bot.sendMessage(debug_chat, debug_text)
             break
         except telepot.exception.TooManyRequestsError as e:
             print(e, traceback.format_exc())
@@ -21,6 +18,29 @@ def send_to_all_managers(msg):
             
             print('SLEEPING', sec)
             time.sleep(sec)
+        except telepot.exception.TelegramError as tex:
+            print(tex)
+            return 
+
+def send_to_all_managers(alias, msg):
+    emoji = BOTS_POOL[alias]['emoji']
+    msg = "[INFO]{}: {} BOT\n{}".format(emoji, alias.upper(), msg)
+    bot_key = BOTS_POOL['bot_key']
+    print(msg)
+    for i in range(2):
+        try:
+            get_bot(bot_key).sendMessage(debug_chat, msg)
+            break
+        except telepot.exception.TooManyRequestsError as e:
+            print(e, traceback.format_exc())
+            sec = e.json.get('parameters',{}).get('retry_after', 5)
+            
+            print('SLEEPING', sec)
+            time.sleep(sec)
+        except telepot.exception.TelegramError as tex:
+            print(tex)
+            return 
+        
     # return
     
     
@@ -29,5 +49,5 @@ def send_to_all_managers(msg):
 
 
 if __name__ == "__main__":
-    for i in range(30):
-        send_to_all_managers('testing ' + str(i))
+    for i in range(1):
+        send_to_all_managers('test', 'testing ' + str(i))

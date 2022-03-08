@@ -49,15 +49,14 @@ This will like/retweet random tweets that include a specific hashtag. Example: â
 # Set client
 # DB_HOST = os.environ["DB_HOST"]
 
-from database.mongo import db
-
+from database.mongo import get_database
 from settings import MANAGER_TOKEN
 
 # MANAGER_TOKEN = os.environ('MANAGER_TOKEN')
 
 
-def get_auth(chat_id, token):
-    print("get_auth", chat_id, token)
+def get_auth(chat_id, token, db):
+    # print("get_auth", chat_id, token)
     if token == MANAGER_TOKEN:
         manager = db.managers.insert_one(
             dict(
@@ -72,12 +71,13 @@ def start_with(value, text):
     return value[: len(text)] == text
 
 
-def handle_message(chat_id, message):
+def handle_message(chat_id, message, alias):
     # TODO auth
-
+    db = get_database(alias)
+    
     manager = db.managers.find_one({"chat_id": chat_id})
     if not manager:
-        manager = get_auth(chat_id, message)
+        manager = get_auth(chat_id, message, db)
         if not manager:
             return "You need to authentificate, please provide MANAGER_TOKEN"
         return "Welcome, test_manager! Now you can send me these commands:\n{}".format(COMMANDS_HELP)
@@ -108,9 +108,9 @@ def handle_message(chat_id, message):
                 if action not in ['like', 'rt']:
                     return 'The ACTION value must be one of ["like", "rt"]'
                 
-                custom_settings = get_custom_settings()
+                custom_settings = get_custom_settings(db)
                 
-                posts = list(TwitterApi.get_tweets_by_query(tag, count))
+                posts = list(TwitterApi(db=db).get_tweets_by_query(tag, count))
                 user_count =  len(posts) * len(get_some_users(percent=custom_settings['{}_USER_PERCENT'.format(action.upper())]))
                 bot = get_bot()
                 bot.sendMessage(chat_id, 'Found {} tweets. We creating about {} {} orders, this may take some time, see the log'.format(
@@ -123,7 +123,7 @@ def handle_message(chat_id, message):
                     for user in get_some_users(percent=custom_settings['{}_USER_PERCENT'.format(action.upper())]):
                         text = create_order(post, user, action.lower())
                         if text:
-                            send_to_all_managers(text)
+                            send_to_all_managers(alias, text)
                         user_count += 1
                 return 'Found {} tweets with {} hastag. Created {} {} orders.'.format(
                     len(list(posts)), 
@@ -151,7 +151,7 @@ def handle_message(chat_id, message):
                 return "Can't parse the set_percent command!"
             
             key = action + '_USER_PERCENT'
-            set_custom_settings({key: percent})
+            set_custom_settings(db, {key: percent})
             return '{} percent changed to {}'.format(action, percent)
         
         if start_with(message, "del_follower"):
@@ -194,18 +194,26 @@ def handle_message(chat_id, message):
             return result
         
         if message == 'stats':
-            users=[u['username'] for u in db.users.find(dict(deleted=False))]
+            users_ = list(db.users.find(dict(deleted=False)))
+            blocked_users = []
+            ok_users = []
+            for u in users_:
+                if u['status'] == 'blocked':
+                    blocked_users.append(u['username'])
+                else:
+                    ok_users.append(u['username'])
             sources=[u['username'] for u in db.sources.find(dict(deleted=False))]
             rt_orders=db.orders.find(dict(status='new', action='rt'))
             like_orders=db.orders.find(dict(status='new', action='like'))
             errors = db.orders.find(dict(status='error'))
-            text = 'Users pool({}):\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors:{}\n\nConfiguration values:{}'.format(
-                len(users), '\n'.join(users),
+            text = 'Users pool({}):\n{}\nBlocked:{}\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors:{}\n\nConfiguration values:{}'.format(
+                len(ok_users), '\n'.join(ok_users),
+                len(blocked_users), '\n'.join(blocked_users),
                 len(sources), '\n'.join(sources),
                 like_orders and len(list(like_orders)) or 0, 
                 rt_orders and len(list(rt_orders)) or 0, 
                 errors and len(list(errors)) or 0,
-                json.dumps(get_custom_settings(), indent=4)
+                json.dumps(get_custom_settings(db), indent=4)
             )
             return text
         if start_with(message, "set_delay"):
@@ -219,7 +227,7 @@ def handle_message(chat_id, message):
                 return "A and B must be greater than 0"
             if end <= start: 
                 return '"A" must be greater than "B"'
-            set_custom_settings({
+            set_custom_settings(db, {
                 'DELAY_MINUTES_MAX': end,
                 'DELAY_MINUTES_MIN': start,
             })

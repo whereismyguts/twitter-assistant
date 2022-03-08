@@ -2,10 +2,12 @@ from pymongo import MongoClient
 
 DB_HOST = '127.0.0.1'
 client = MongoClient("mongodb://{}:27017/".format(DB_HOST))
-db = client.andrew_db
 
-__all__ = ('db', 'get_random')
+__all__ = ('get_database', 'get_random')
 
+
+def get_database(dbname):
+    return getattr(client, dbname)
 
 def get_random(table, count=1, filter=None):
     if not filter:

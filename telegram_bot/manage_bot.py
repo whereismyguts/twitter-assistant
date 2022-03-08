@@ -1,6 +1,7 @@
 from manage.handler import handle_message
 from telegram_bot.bot_base import BaseHandler
-from settings import debug_chat
+# from settings import debug_chat
+from telegram_bot.services import send_debug
 
 # from sheets_api import append_transaction, get_data_from_current_list
 import datetime
@@ -36,12 +37,8 @@ class ManageHandler(BaseHandler, ContainTestDataSource):
     # override:
 
     def _handle_message(self, text):
-        # print(self.data)
-        # print('text')
-        # print(self.chat_id)
         self.handle_key(text)
         # self.send('unknow')
-
         # self.send('texted: {}'.format(text))
         # self.send('What to do?', keys=[
         #     {'text': 'new event', 'data': 'new'},
@@ -69,11 +66,10 @@ class ManageHandler(BaseHandler, ContainTestDataSource):
         return [dict(text=k, data=k) for k in comands]
 
     def handle_key(self, text):
-        answer = handle_message(self.chat_id, text)
+        answer = handle_message(self.chat_id, text, self.alias)
 
         try:
-            debug_text = '[DEBUG]:\nREQUEST:\n"{}"\n\nRESPONSE:\n{}'.format(text, answer)
-            self.bot.sendMessage(debug_chat, debug_text)
+            send_debug(self.bot, self.alias, 'REQUEST:\n"{}"\n\nRESPONSE:\n{}'.format(text, answer))
         except Exception as e:
             print("debug")
             print(e)

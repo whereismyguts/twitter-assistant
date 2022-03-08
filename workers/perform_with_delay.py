@@ -4,7 +4,7 @@ sys.path.append(os.getcwd())
 
 from custom_settings import get_custom_settings
 from twitter_api.api import TwitterApi
-from database.mongo import db, get_random
+from database.mongo import get_database
 from settings import debug_chat
 from telegram_bot.services import send_to_all_managers
 import argparse
@@ -14,12 +14,13 @@ import datetime
 from custom_settings import emojis
 import traceback
 
-def perform_action(order):
+def perform_action(db, order):
     try:
 
         if order['action'] == 'like':
             r = TwitterApi.set_like(order["user"], order["post"]["id"])
             return r.get("data", {}).get("liked")
+        
         elif order['action'] == 'rt':
             r = TwitterApi.retweet(order["user"], order["post"]["id"])
             return r.get("data", {}).get("retweeted") 
@@ -44,11 +45,15 @@ def perform_action(order):
 
 # CRON: */1 * * * *
 if __name__ == "__main__":
-    
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--action")
+    parser.add_argument("-n", "--name")
+    
     args = parser.parse_args()
+    
     ACTION_TYPE = args.action
+    db = get_database(args.name)
+    
     if ACTION_TYPE not in ['rt', 'like']:
         raise Exception('bad action!')
     
@@ -57,15 +62,11 @@ if __name__ == "__main__":
         sys.exit()
         
     with open(ACTION_TYPE+'.lock', 'w') as f:
-        
             f.write(str(datetime.datetime.utcnow()))
             print(ACTION_TYPE, 'locked')
-            
-            
     try:
-        stored_settings = get_custom_settings() 
-        print(stored_settings)
-        
+        stored_settings = get_custom_settings(db) 
+        # print(stored_settings)
         # orders = get_random(
         #     db.orders,
         #     filter={
@@ -103,8 +104,7 @@ if __name__ == "__main__":
         else:
             raise Exception("Can't find suitable users now.")
         # 'user.status': { '$ne': 'ok' } 
-        
-        
+   
         delay = random.randint(
             stored_settings['DELAY_MINUTES_MIN'],
             stored_settings['DELAY_MINUTES_MAX'], 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         time.sleep(delay*60 + random.randint(0,10))
         print(delay, 'sleep is over.')
         
-        status = perform_action(order)
+        status = perform_action(db, order)
         db.users.update_one(
             {'id': order['user']['id']},
             {'$set': {'last_request': datetime.datetime.utcnow()}},
@@ -147,7 +147,7 @@ if __name__ == "__main__":
                     order["post"]["id"],
                 ),
             )
-        send_to_all_managers(msg)
+        send_to_all_managers(args.name, msg)
                 
         
     except Exception as e:

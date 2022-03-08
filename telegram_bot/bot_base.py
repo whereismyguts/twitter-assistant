@@ -3,9 +3,10 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 class BaseHandler:
-    def __init__(self, data, bot):
+    def __init__(self, data, bot, alias):
         self.bot = bot
         self.data = data
+        self.alias = alias
 
     @property
     def event(self):

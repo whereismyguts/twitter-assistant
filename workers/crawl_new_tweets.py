@@ -4,29 +4,29 @@ sys.path.append(os.getcwd())
 
 import random
 
-from database.mongo import db
+from database.mongo import get_database
 from twitter_api.api import TwitterApi
 from settings import debug_chat
 from telegram_bot.services import send_to_all_managers
 from custom_settings import get_custom_settings, emojis
 import datetime
-
+import argparse
 
 # posts = db.posts
 # posts = [random.randint(1000, 1000000) for i in range(10)]
 
 
-def get_sources():
+def get_sources(db):
     return [s for s in db.sources.find(dict(deleted=False))]
     # return [dict(id=get_id()) for i in range(5)]
 
 
-def get_users():
-    return [u for u in db.users.find(dict(deleted=False))]
+def get_users(db):
+    return [u for u in db.users.find(dict(deleted=False, status='ok'))]
     # return [dict(id=get_id()) for i in range(10)]
 
 
-def get_posts_from_source(source):
+def get_posts_from_source(db, source):
     # posts = [dict(id=get_id(), last_id=get_id()) for i in range(1)]
     last_id=source.get("last_id")
     if last_id:
@@ -34,7 +34,7 @@ def get_posts_from_source(source):
     else:
         params = {'start_dt': source['created'] }
 
-    posts = TwitterApi.get_tweets_by_id(
+    posts = TwitterApi(db=db).get_tweets_by_id(
         source["id"], 
         **params
     )
@@ -48,8 +48,8 @@ def get_posts_from_source(source):
     return []
 
 
-def get_some_users(percent=1):
-    users = get_users()
+def get_some_users(db, percent=1):
+    users = get_users(db)
     if len(users) < 5:
         return users
     count = int(len(users) * percent)
@@ -57,7 +57,7 @@ def get_some_users(percent=1):
     return users[:count]
 
 
-def create_order(post, user, action):
+def create_order(db, post, user, action):
     db.orders.insert_one(
         dict(
             action=action,
@@ -81,23 +81,28 @@ def create_order(post, user, action):
 
 
 if __name__ == "__main__":
-    custom_settings = get_custom_settings()
-    sources = get_sources()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-n", "--name")
+    args = parser.parse_args()
+    
+    db = get_database(args.name)
+    custom_settings = get_custom_settings(db)
+    sources = get_sources(db)
     for source in sources:
-        posts = get_posts_from_source(source)
+        posts = get_posts_from_source(db, source)
         # print(source)
         text = ''
         for post in posts:
             if post.get('in_reply_to_user_id'): # don't act with replies
                 print('skiped:' ,post['id'], post['text'])
                 continue
-            for user in get_some_users(percent=custom_settings['LIKE_USER_PERCENT']):
-                text = create_order(post, user, "like")
+            for user in get_some_users(db, percent=custom_settings['LIKE_USER_PERCENT']):
+                text = create_order(db, post, user, "like")
                 if text:
-                    send_to_all_managers(text)
-            for user in get_some_users(percent=custom_settings['RT_USER_PERCENT']):
-                text = create_order(post, user, "rt")
+                    send_to_all_managers(args.name, text)
+            for user in get_some_users(db, percent=custom_settings['RT_USER_PERCENT']):
+                text = create_order(db, post, user, "rt")
                 if text:
-                    send_to_all_managers(text)
+                    send_to_all_managers(args.name, text)
 
             

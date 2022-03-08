@@ -1,4 +1,4 @@
-from database.mongo import db
+
 
 DEFAULT_SETTINGS = {
     'DELAY_MINUTES_MAX': 15,
@@ -16,7 +16,7 @@ emojis = {
     ('rt', 'DONE'):'🟩 ',
 }
 
-def get_custom_settings():
+def get_custom_settings(db):
     settings = db.settings.find_one() or dict()
     for key, val in DEFAULT_SETTINGS.items():
         settings[key] = settings.get(key) if settings.get(key) is not None else val
@@ -27,7 +27,7 @@ def get_custom_settings():
 
 
 
-def set_custom_settings(data):
+def set_custom_settings(db, data):
     settings = db.settings.find_one() or dict()
     settings.update(data)
     if '_id' in settings:

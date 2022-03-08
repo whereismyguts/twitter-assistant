@@ -89,7 +89,7 @@ def handle_enter_pin(db, manager, message, chat_id):
 
 def handle_add_source(db, username):
     try:
-        user_data = TwitterApi.get_user_data_by_username(username)
+        user_data = TwitterApi(db=db).get_user_data_by_username(username)
     except Exception as e:
         print(e)
         return 'Could not find user with username "{}"'.format(username)
