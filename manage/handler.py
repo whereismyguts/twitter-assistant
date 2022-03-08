@@ -206,7 +206,7 @@ def handle_message(chat_id, message, alias):
             rt_orders=db.orders.find(dict(status='new', action='rt'))
             like_orders=db.orders.find(dict(status='new', action='like'))
             errors = db.orders.find(dict(status='error'))
-            text = 'Users pool({}):\n{}\nBlocked:{}\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors:{}\n\nConfiguration values:{}'.format(
+            text = 'Users pool({}):\n\n{}\n\nBlocked({}):\n\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors:{}\n\nConfiguration values:{}'.format(
                 len(ok_users), '\n'.join(ok_users),
                 len(blocked_users), '\n'.join(blocked_users),
                 len(sources), '\n'.join(sources),

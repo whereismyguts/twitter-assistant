@@ -25,7 +25,7 @@ def send_debug(bot, alias, msg):
 def send_to_all_managers(alias, msg):
     emoji = BOTS_POOL[alias]['emoji']
     msg = "[INFO]{}: {} BOT\n{}".format(emoji, alias.upper(), msg)
-    bot_key = BOTS_POOL['bot_key']
+    bot_key = BOTS_POOL[alias]['bot_key']
     print(msg)
     for i in range(2):
         try:
