@@ -19,11 +19,23 @@ def perform_action(db, order):
 
         if order['action'] == 'like':
             r = TwitterApi.set_like(order["user"], order["post"]["id"])
-            return r.get("data", {}).get("liked")
+            if r.get("data", {}).get("liked"):
+                return'done'
+            
+            
         
         elif order['action'] == 'rt':
             r = TwitterApi.retweet(order["user"], order["post"]["id"])
-            return r.get("data", {}).get("retweeted") 
+            if r.get("data", {}).get("retweeted"):
+                return 'done'
+        
+        new_data = {'status': 'error', 'error': r}    
+        order.update(new_data)
+        db.orders.update_one(
+            {'_id': order['_id']},
+            {'$set': new_data}
+        )
+        return 'error'
 
     except Exception as e:
         print(e, traceback.format_exc())
@@ -86,6 +98,11 @@ if __name__ == "__main__":
           raise Exception("No orders found!")  
         
         for order in orders:
+            # if (datetime.datetime.utcnow() - order['created']).total_seconds() > 60 * 60 *3:
+            #     db.orders.delete_many({"_id": order['_id']})
+            #     print(order)
+            #     continue
+            
             user = db.users.find_one({'id': order['user']['id']})
             
             if user['status'] != 'ok':
@@ -103,7 +120,7 @@ if __name__ == "__main__":
             print('got a suitable order:\n', order)    
             break
         else:
-            raise Exception("Can't find suitable users now.")
+            raise Exception("Can't find suitable orders now.")
         # 'user.status': { '$ne': 'ok' } 
    
         delay = random.randint(
