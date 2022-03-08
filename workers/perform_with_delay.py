@@ -66,6 +66,7 @@ if __name__ == "__main__":
             print(ACTION_TYPE, 'locked')
     try:
         stored_settings = get_custom_settings(db) 
+        cooldown_seconds = stored_settings['USER_COOLDOWN_SECONDS']
         # print(stored_settings)
         # orders = get_random(
         #     db.orders,
@@ -94,9 +95,9 @@ if __name__ == "__main__":
             if 'last_request' in user:
                 lr = user['last_request']
                 time_from_lr = datetime.datetime.utcnow() - lr
-                if time_from_lr.total_seconds() < 5*60:
+                if time_from_lr.total_seconds() < cooldown_seconds:
                     print('{} was used recently ({}), need to wait for {} sec'.format(
-                        user['username'], lr, 5*60 - time_from_lr.total_seconds()
+                        user['username'], lr, cooldown_seconds - time_from_lr.total_seconds()
                     ))
                     continue
             print('got a suitable order:\n', order)    

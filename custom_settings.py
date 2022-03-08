@@ -5,6 +5,7 @@ DEFAULT_SETTINGS = {
     'DELAY_MINUTES_MIN': 1,
     'LIKE_USER_PERCENT': 0.8,
     'RT_USER_PERCENT': 0.5,
+    'USER_COOLDOWN_SECONDS': 10*60,
 }
 
 # db.settings.insert_one(DEFAULT_SETTINGS)

@@ -9,10 +9,12 @@ class TwitterApi():
     _user = None
 
     def __init__(self, alias=None, db=None):
-        if not db:
+        if db is None:
             self.db = get_database(alias)
+            
         else:
             self.db = db
+            
         
     def get_user(self):
         if self._user is None:
@@ -32,7 +34,7 @@ class TwitterApi():
 
 
     def check_all_users(self):
-        users=list(self.users.find(dict(deleted=False)))
+        users=list(self.db.users.find(dict(deleted=False)))
         params = {"usernames": 'jack', "user.fields": "id,name,username"}
         
         for u in users:
@@ -253,6 +255,7 @@ class TwitterApi():
             return []
         return response.json()["data"]
 
-
+from database.mongo import get_database
 if __name__ == "__main__":
-    pass
+    db = get_database('main')
+    TwitterApi(db=db).check_all_users()
