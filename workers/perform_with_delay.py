@@ -112,7 +112,7 @@ if __name__ == "__main__":
             if 'last_request' in user:
                 lr = user['last_request']
                 time_from_lr = datetime.datetime.utcnow() - lr
-                if time_from_lr.total_seconds() < cooldown_seconds:
+                if time_from_lr.total_seconds() <= cooldown_seconds:
                     print('{} was used recently ({}), need to wait for {} sec'.format(
                         user['username'], lr, cooldown_seconds - time_from_lr.total_seconds()
                     ))

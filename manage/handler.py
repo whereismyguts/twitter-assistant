@@ -4,15 +4,15 @@ from custom_settings import set_custom_settings
 from twitter_api.api import TwitterApi
 from bson.json_util import dumps
 from manage.manage_handlers import (
-    handle_add_follower,
+    set_authorize_state,
     handle_add_source,
     handle_enter_pin,
 )
+import datetime
 import re
-from workers.crawl_new_tweets import get_some_users, create_order
-from telegram_bot.services import send_to_all_managers
-from custom_settings import get_custom_settings
-from telegram_bot.services import get_bot
+from manage.hashtag_handlers import create_hastag_orders
+from manage.info_handlers import get_stats
+
 COMMANDS_HELP = """
 help
 This will show the various commands that can be used with this bot. 
@@ -85,9 +85,33 @@ def handle_message(chat_id, message, alias):
     if manager["state"] == "main":
         if message == 'help':
             return '-- Commands --\n{}'.format(COMMANDS_HELP)
-        if message == "add_follower":
-            return handle_add_follower(db, manager, chat_id)
 
+        if message == "add_follower":
+            return set_authorize_state(
+                db, manager, chat_id, 'enter_pin', 
+                "Follow the link, authorize your Twitter account and send me a PIN:\n",
+            )
+
+        if start_with(message, "new_hashtag_task"):
+            tags = message.split(' ')[1:]
+            tags = [t.strip() for t in tags]
+            print(tags)
+            try:
+                for t in tags:
+                    assert t[0] == '#' and len(t)>1
+            except Exception as e:
+                print(e, traceback.format_exc())
+                return '\n'.join([
+                    'Bad hastag format!',
+                    'example:',
+                    '"new_hashtag_task #tag1 #tag2"',
+                ])
+            return set_authorize_state(
+                db, manager, chat_id, 'enter_pin_hastag_task',
+                "Follow the link, authorize your Twitter account for new hashtag task and send me a PIN:\n",
+                extra_data={'tags': tags}
+            )
+        
         if start_with(message, "add_source"):
             message = message.replace("@", "")
             username = message.split(" ")[1]
@@ -98,43 +122,7 @@ def handle_message(chat_id, message, alias):
         #     return set_like(db, post_id)
         
         if start_with(message, "#"):
-            try:
-                if len(message.split(' ')) != 3:
-                    raise Exception("{} is not 3 parts".format(message))
-                tag, action, count = message.split(' ')
-                count = int(count)
-                if count < 10 or count > 100:
-                    return 'The COUNT must be between 10 and 100'
-                if action not in ['like', 'rt']:
-                    return 'The ACTION value must be one of ["like", "rt"]'
-                
-                custom_settings = get_custom_settings(db)
-                
-                posts = list(TwitterApi(db=db).get_tweets_by_query(tag, count))
-                user_count =  len(posts) * len(get_some_users(percent=custom_settings['{}_USER_PERCENT'.format(action.upper())]))
-                bot = get_bot()
-                bot.sendMessage(chat_id, 'Found {} tweets. We creating about {} {} orders, this may take some time, see the log'.format(
-                    len(list(posts)), 
-                    user_count,
-                    action.lower(),
-                ))
-                user_count = 0
-                for post in posts:
-                    for user in get_some_users(percent=custom_settings['{}_USER_PERCENT'.format(action.upper())]):
-                        text = create_order(post, user, action.lower())
-                        if text:
-                            send_to_all_managers(alias, text)
-                        user_count += 1
-                return 'Found {} tweets with {} hastag. Created {} {} orders.'.format(
-                    len(list(posts)), 
-                    tag,
-                    user_count,
-                    action.lower(),
-                )            
-            except Exception as e:
-                print("TAG parse error:")
-                print(e, traceback.format_exc())
-                return "Can't parse the tag command!"
+            return create_hastag_orders(db, message, alias, chat_id)
             
         if start_with(message, "set_percent"):
             try:
@@ -194,28 +182,8 @@ def handle_message(chat_id, message, alias):
             return result
         
         if message == 'stats':
-            users_ = list(db.users.find(dict(deleted=False)))
-            blocked_users = []
-            ok_users = []
-            for u in users_:
-                if u['status'] == 'blocked':
-                    blocked_users.append(u['username'])
-                else:
-                    ok_users.append(u['username'])
-            sources=[u['username'] for u in db.sources.find(dict(deleted=False))]
-            rt_orders=db.orders.find(dict(status='new', action='rt'))
-            like_orders=db.orders.find(dict(status='new', action='like'))
-            errors = db.orders.find(dict(status='error'))
-            text = 'Users pool({}):\n\n{}\n\nBlocked({}):\n\n{}\n\nSources ({}):\n{}\n\nOrders in queue:\nLike: {}\nRetweet: {}\nErrors:{}\n\nConfiguration values:{}'.format(
-                len(ok_users), '\n'.join(ok_users),
-                len(blocked_users), '\n'.join(blocked_users),
-                len(sources), '\n'.join(sources),
-                like_orders and len(list(like_orders)) or 0, 
-                rt_orders and len(list(rt_orders)) or 0, 
-                errors and len(list(errors)) or 0,
-                json.dumps(get_custom_settings(db), indent=4)
-            )
-            return text
+            return get_stats(db)
+        
         if start_with(message, "set_delay"):
             try:
                 start = int(message.split(" ")[1])
@@ -232,8 +200,36 @@ def handle_message(chat_id, message, alias):
                 'DELAY_MINUTES_MIN': start,
             })
             return 'Delay is set to {}-{} minutes'.format(start, end)
+        
     if manager["state"] == "enter_pin":
-        return handle_enter_pin(db, manager, message, chat_id)
+        user_data = handle_enter_pin(db, manager, message, chat_id)
+        if not isinstance(user_data, dict):
+            return user_data
+        
+        user = db.users.find_one(dict(id=user_data["id"])) # ignore deleted
+        if not user: # error?
+            user = db.users.insert_one({"id": user_data["id"]})
+        user = db.users.update_one(
+            {"id": user_data["id"]},
+            {"$set": user_data},
+            upsert=False,
+        )
+        return 'New follower "{}" authorized 👌'.format(user_data["username"])
+    
+    if manager['state'] == 'enter_pin_hastag_task':
+        user_data = handle_enter_pin(db, manager, message, chat_id)
+        print(manager)
+        if not isinstance(user_data, dict): # error?
+            return user_data
+        db.hashtag_tasks.insert_one({
+            'status': 'active',
+            'created': datetime.datetime.utcnow(),
+            'last_update': datetime.datetime.utcnow(),
+            'tags': manager['tags'],
+            'user': user_data,
+        })
+
+        return 'New hashtag task created!'
     return ""
 
 

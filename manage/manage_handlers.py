@@ -3,27 +3,25 @@ import datetime
 from twitter_api.api import TwitterApi
 
 
-def handle_add_follower(db, manager, chat_id):
+def set_authorize_state(db, manager, chat_id, tmp_state, response_message, extra_data=None):
     try:
         auth_url, owner_token, owner_secret = TwitterApi.get_authorization_url()
         manager["owner_token"] = owner_token
         manager["owner_secret"] = owner_secret
-        manager["state"] = 'enter_pin'
+        manager["state"] = tmp_state
+        if extra_data:
+            manager.update(extra_data)
+            print(manager)
     except Exception as e:
         print(e, traceback.format_exc())
         return "error, " + str(e)
-
     response = db.managers.update_one(
         {"chat_id": chat_id},
         {"$set": manager},
         upsert=False,
     )
-    print(response)
-
-    return (
-        "Follow the link, authorize your Twitter account and send me a PIN:\n"
-        + auth_url
-    )
+    return response_message + auth_url
+    
 
 
 def handle_enter_pin(db, manager, message, chat_id):
@@ -42,8 +40,10 @@ def handle_enter_pin(db, manager, message, chat_id):
             message, owner_token, owner_secret
         )
     except Exception as e:
+        return "error, " + str(e)
+    finally:
         try:
-            manager["state"] = "main"
+            manager['state'] = 'main'
             response = db.managers.update_one(
                 {"chat_id": chat_id},
                 {"$set": manager},
@@ -51,16 +51,6 @@ def handle_enter_pin(db, manager, message, chat_id):
             )
         except:
             pass
-        print(e, traceback.format_exc())
-        return "error, " + str(e)
-    manager["state"] = "main"
-    # del session["owner_token"]
-    # del session["owner_secret"]
-    response = db.managers.update_one(
-        {"chat_id": chat_id},
-        {"$set": manager},
-        upsert=False,
-    )
 
     try:
         # check authorization:
@@ -68,24 +58,11 @@ def handle_enter_pin(db, manager, message, chat_id):
     except Exception as e:
         print(e, traceback.format_exc())
         return "Error, " + str(e)
-
-    user = db.users.find_one(dict(id=user_data["id"])) # ignore deleted
-    if not user:
-        user = db.users.insert_one({"id": user_data["id"]})
-
     user_data["access_token"] = access_token
     user_data["access_token_secret"] = access_token_secret
     user_data['deleted'] = False
-    # print(user_data['data'])
-    user = db.users.update_one(
-        {"id": user_data["id"]},
-        {"$set": user_data},
-        upsert=False,
-    )
-    # print('user saved')
-
-    return 'New follower "{}" authorized 👌'.format(user_data["username"])
-
+    return user_data
+    
 
 def handle_add_source(db, username):
     try:

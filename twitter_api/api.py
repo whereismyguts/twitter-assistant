@@ -45,7 +45,7 @@ class TwitterApi():
                 u['status'] = 'blocked'
             else:
                 # print(u['username'])
-                print(response.text)
+                # print(response.text)
                 u['status'] = 'ok'
             self.db.users.update_one(
                 {"id": u['id']},
@@ -59,13 +59,18 @@ class TwitterApi():
         print(json.dumps(response.json(), indent=4, sort_keys=True))
         return response.json()["data"][0]
 
-    def get_tweets_by_query(self, query, count):
-        oauth = self.create_oauth_session()
+    def get_tweets_by_query(self, query, count=100, start_dt=None, user=None):
+        oauth = self.create_oauth_session(user=user)
         params = {
             "query": query + ' -is:retweet', 
             "max_results": count,
             "tweet.fields": "id,author_id,text,created_at",
         }
+        if start_dt:
+            # 'YYYY-MM-DDTHH:mm:ssZ'
+            # params["end_time"] = end_dt.strftime("%Y-%M-%dT%H:%M:%SZ")
+            params['start_time'] = start_dt.isoformat('T')[:-3] + 'Z'
+            
         response = oauth.get('https://api.twitter.com/2/tweets/search/recent', params=params)
         if response.status_code != 200:
             raise Exception(
@@ -73,8 +78,11 @@ class TwitterApi():
                     response.status_code, response.text
                 )
             )
+        
+        print(json.dumps(response.json(), indent=4, sort_keys=True))
+        if response.json()['meta']['result_count'] == 0:
+            return []
         json_response = response.json()["data"]
-        print(json.dumps(json_response, indent=4, sort_keys=True))
         return json_response
     
     def get_user_data_me(access_token, access_token_secret):
@@ -255,7 +263,7 @@ class TwitterApi():
             return []
         return response.json()["data"]
 
-from database.mongo import get_database
+
 if __name__ == "__main__":
     db = get_database('main')
     TwitterApi(db=db).check_all_users()
