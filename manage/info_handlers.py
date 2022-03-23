@@ -1,12 +1,14 @@
 from custom_settings import get_custom_settings
-import json 
+from twitter_api.api import TwitterApi
+import json
 
 def get_stats(db):
+    TwitterApi(db=db).check_all_users()
     users_ = list(db.users.find(dict(deleted=False)))
     blocked_users = []
     ok_users = []
     for u in users_:
-        if u['status'] == 'blocked':
+        if 'status' in u and u['status'] == 'blocked':
             blocked_users.append(u['username'])
         else:
             ok_users.append(u['username'])

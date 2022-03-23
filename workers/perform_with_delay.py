@@ -104,9 +104,11 @@ if __name__ == "__main__":
             #     continue
             
             user = db.users.find_one({'id': order['user']['id']})
-            
-            if user['status'] != 'ok':
-                print(user['username'], 'user is', user['status'])
+            if not user:
+               
+               continue
+            if 'status' in user and user['status'] != 'ok':
+                print(user['username'], 'user is', user.get('status'))
                 continue    
             
             if 'last_request' in user:

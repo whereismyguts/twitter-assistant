@@ -2,7 +2,7 @@ from settings import consumer_key, consumer_secret
 from requests_oauthlib import OAuth1Session
 from database.mongo import get_database
 import json
-
+import datetime
 
 class TwitterApi():
 
@@ -69,6 +69,7 @@ class TwitterApi():
         if start_dt:
             # 'YYYY-MM-DDTHH:mm:ssZ'
             # params["end_time"] = end_dt.strftime("%Y-%M-%dT%H:%M:%SZ")
+            start_dt = max(start_dt, datetime.datetime.utcnow() - datetime.timedelta(days=7))
             params['start_time'] = start_dt.isoformat('T')[:-3] + 'Z'
             
         response = oauth.get('https://api.twitter.com/2/tweets/search/recent', params=params)
