@@ -22,9 +22,9 @@ def send_debug(bot, alias, msg):
             print(tex)
             return 
 
-def send_to_all_managers(alias, msg):
+def send_to_all_managers(alias, msg, level='INFO'):
     emoji = BOTS_POOL[alias]['emoji']
-    msg = "[INFO]{}: {} BOT\n{}".format(emoji, alias.upper(), msg)
+    msg = "[{}]{}: {} BOT\n{}".format(level, emoji, alias.upper(), msg)
     bot_key = BOTS_POOL[alias]['bot_key']
     print(msg)
     for i in range(2):

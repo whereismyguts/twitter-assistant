@@ -103,9 +103,9 @@ if __name__ == "__main__":
             #     print(order)
             #     continue
             
-            user = db.users.find_one({'id': order['user']['id']})
+            user = ('user' in order and order['user']) or db.users.find_one({'id': order['user']['id']})
             if not user:
-               
+               send_to_all_managers(args.name, 'User not found in order {}'.format(order['_id']))
                continue
             if 'status' in user and user['status'] != 'ok':
                 print(user['username'], 'user is', user.get('status'))
