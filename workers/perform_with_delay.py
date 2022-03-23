@@ -12,6 +12,7 @@ import time
 import random
 import datetime
 from custom_settings import emojis
+from services.key_value_storage import set_last_request, get_last_request
 import traceback
 
 def perform_action(db, order):
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         
     with open(ACTION_TYPE+'.lock', 'w') as f:
             f.write(str(datetime.datetime.utcnow()))
-            print(ACTION_TYPE, 'locked')
+            print(ACTION_TYPE, 'locked', datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M'))
     try:
         stored_settings = get_custom_settings(db) 
         cooldown_seconds = stored_settings['USER_COOLDOWN_SECONDS']
@@ -103,20 +104,21 @@ if __name__ == "__main__":
             #     print(order)
             #     continue
             
-            user = ('user' in order and order['user']) or db.users.find_one({'id': order['user']['id']})
+            user = order['user'] or db.users.find_one({'id': order['user']['id']})
             if not user:
-               send_to_all_managers(args.name, 'User not found in order {}'.format(order['_id']))
+               send_to_all_managers(args.name, 'User not found in order {}'.format(order['_id']), level='ERROR')
                continue
             if 'status' in user and user['status'] != 'ok':
                 print(user['username'], 'user is', user.get('status'))
                 continue    
             
-            if 'last_request' in user:
-                lr = user['last_request']
-                time_from_lr = datetime.datetime.utcnow() - lr
+            
+            last_request = get_last_request(user['id'], db=db)
+            if last_request:
+                time_from_lr = datetime.datetime.utcnow() - last_request
                 if time_from_lr.total_seconds() <= cooldown_seconds:
                     print('{} was used recently ({}), need to wait for {} sec'.format(
-                        user['username'], lr, cooldown_seconds - time_from_lr.total_seconds()
+                        user['username'], last_request, cooldown_seconds - time_from_lr.total_seconds()
                     ))
                     continue
             print('got a suitable order:\n', order)    
@@ -134,10 +136,7 @@ if __name__ == "__main__":
         print(delay, 'sleep is over.')
         
         status = perform_action(db, order)
-        db.users.update_one(
-            {'id': order['user']['id']},
-            {'$set': {'last_request': datetime.datetime.utcnow()}},
-        )
+        set_last_request(user['id'], datetime.datetime.utcnow(), db=db)
         db.orders.update_one(
             dict(_id=order["_id"]),
             {"$set": dict(
@@ -175,5 +174,5 @@ if __name__ == "__main__":
     
     
     os.remove(ACTION_TYPE+'.lock')
-    print(ACTION_TYPE, 'unlocked')
+    print(ACTION_TYPE, 'unlocked', datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M'))
             
