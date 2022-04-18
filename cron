@@ -1,0 +1,9 @@
+*/10 * * * * cd /home/twitter_bot/twitter-assistant && /home/twitter_bot/twitter-assistant/bin/python workers/crawl_new_tweets.py -n main >> log/crawl_main.log
+*/15 * * * * cd /home/twitter_bot/twitter-assistant && /home/twitter_bot/twitter-assistant/bin/python workers/perform_with_delay.py -n main -a like >> log/like_main.log
+*/15 * * * * cd /home/twitter_bot/twitter-assistant && /home/twitter_bot/twitter-assistant/bin/python workers/perform_with_delay.py -n main -a rt >> log/rt_main.log
+
+*/10 * * * * cd /home/twitter_bot/twitter-assistant && /home/twitter_bot/twitter-assistant/bin/python workers/process_hashtags.py -n hashtags >> log/crawl_hash.log
+*/15 * * * * cd /home/twitter_bot/twitter-assistant && /home/twitter_bot/twitter-assistant/bin/python workers/perform_with_delay.py -n hashtags -a like >> log/like_hash.log
+*/15 * * * * cd /home/twitter_bot/twitter-assistant && /home/twitter_bot/twitter-assistant/bin/python workers/perform_with_delay.py -n hashtags -a rt >> log/like_hash.log
+
+

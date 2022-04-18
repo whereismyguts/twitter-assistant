@@ -13,12 +13,12 @@ from telegram_bot.services import send_to_all_managers
 
 # CRON: */1 * * * *
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
     # # parser.add_argument("-a", "--action")
-    # parser.add_argument("-n", "--name")
-    # args = parser.parse_args()
-    # bot_alias = args.name
-    bot_alias = 'main'
+    parser.add_argument("-n", "--name")
+    args = parser.parse_args()
+    bot_alias = args.name
+    # bot_alias = 'main'
     
     if bot_alias not in BOTS_POOL:
         raise ValueError(bot_alias, 'not in the bots pool!')
