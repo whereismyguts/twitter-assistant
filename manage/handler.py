@@ -40,6 +40,9 @@ This will set the percentage of “pool” accounts that will like/retweet tweet
 
 #tag ACTION COUNT
 This will like/retweet random tweets that include a specific hashtag. Example: “#BSC like 15” will have the main accounts randomly like 15 tweets that use the #BSC hashtag.
+
+new_hashtag_task #tag1 #tag2
+Authorize new account to scan all posts including listed tags and do like and retweet 
 """
 
 # Logger settings - CloudWatch
@@ -231,7 +234,6 @@ def handle_message(chat_id, message, alias):
 
         return 'New hashtag task created!'
     return ""
-
 
 if __name__ == "__main__":
     print(1488937141400969217)
