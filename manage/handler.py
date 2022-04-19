@@ -217,6 +217,7 @@ def handle_message(chat_id, message, alias):
             {"$set": user_data},
             upsert=False,
         )
+        TwitterApi(db=db).check_all_users()
         return 'New follower "{}" authorized 👌'.format(user_data["username"])
     
     if manager['state'] == 'enter_pin_hastag_task':
